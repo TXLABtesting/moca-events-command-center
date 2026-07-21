@@ -48,6 +48,36 @@ function sty(s) {
 
 class DashboardApp extends React.Component {
 
+  // IT build: zero fake data. Seed arrays (class fields below) are emptied here
+  // so the app boots to a clean Events Tracker; real events/teams come from
+  // Postgres via /api/* (see componentDidMount → bootstrap()).
+  constructor(props) {
+    super(props);
+    if (process.env.NEXT_PUBLIC_DEMO_MODE !== 'true') {
+      this.WS = [];
+      this.RISKS = [];
+      this.DECISIONS = [];
+      this.MILESTONES = [];
+      this.ATTENTION = [];
+      this.DEPTS = [];
+      this.AGM_DEPTS = [];
+      this.DEPT_META = {};
+      this.AGM_META = {};
+      this.EVENT = [];
+      this.AGM_EVENT = [];
+      this.EVENTS = [];
+      this.SEED_TEAMS = { agm: [] };
+    }
+  }
+
+  bootstrap() {
+    if (process.env.NEXT_PUBLIC_DEMO_MODE === 'true') return;
+    fetch('/api/events')
+      .then((r) => (r.ok ? r.json() : { events: [] }))
+      .then((d) => { if (Array.isArray(d.events)) this.setState({ customEvents: d.events }); })
+      .catch(() => {});
+  }
+
   state = { lang: 'en', page: 'overview', railOpen: false, dash: 'all', sev: 'all', repW: 'all', repS: 'all', repO: 'all', repR: 'all', toast: null, admin: false, showLogin: false, loginErr: null, editIdx: null, detailIdx: null, edits: {}, members: null, photos: {}, order: null, submitWs: null, deptIdx: null, deptEditIdx: null, deptMembers: null, deptEdits: {}, acc: { wf: true }, teamView: null, actionKey: null, agendaKey: null, event: null, customEvents: [], showAddEvent: false, density: null, newLogoName: null, eventTeams: {}, showAddTeam: false };
 
   componentDidMount() {
@@ -75,6 +105,7 @@ class DashboardApp extends React.Component {
       this._roleFn = (e) => { try { this.setState({ admin: !!(e.detail && e.detail.admin) }); } catch (err) {} };
       window.addEventListener('moca-demo-role', this._roleFn);
     }
+    this.bootstrap();
   }
   applyHash() {
     try {

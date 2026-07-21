@@ -46,6 +46,9 @@ function sty(s) {
   return out;
 }
 
+// Base path for static assets (empty in dev, "/<repo>" on GitHub Pages).
+const A = process.env.NEXT_PUBLIC_BASE_PATH || '';
+
 class DashboardApp extends React.Component {
 
   state = { lang: 'en', page: 'overview', railOpen: false, dash: 'all', sev: 'all', repW: 'all', repS: 'all', repO: 'all', repR: 'all', toast: null, admin: false, showLogin: false, loginErr: null, editIdx: null, detailIdx: null, edits: {}, members: null, photos: {}, order: null, submitWs: null, deptIdx: null, deptEditIdx: null, deptMembers: null, deptEdits: {}, acc: { wf: true }, teamView: null, actionKey: null, agendaKey: null, event: null, customEvents: [], showAddEvent: false, density: null, newLogoName: null, eventTeams: {}, showAddTeam: false };
@@ -476,9 +479,9 @@ class DashboardApp extends React.Component {
   }
 
   EVENTS = [
-    { id: 'wef', en: 'Annual Meeting of Global Future Leaders 2026', ar: 'المنتدى الاقتصادي العالمي', logo: '/assets/logo-wef.png', status: 'active', period: ['13–15 Oct 2026 · Dubai', '13–15 أكتوبر 2026 · دبي'] },
-    { id: 'agm', en: 'Annual Government Meetings of UAE', ar: 'الاجتماعات السنوية لحكومة دولة الإمارات', logo: '/assets/logo-agm-black.png', status: 'active', period: ['9–10 Nov 2026 · Abu Dhabi', '9–10 نوفمبر 2026 · أبوظبي'] },
-    { id: 'mbr', en: 'MBR Government Excellence Award', ar: 'جائزة محمد بن راشد للأداء الحكومي المتميز', logo: '/assets/logo-mbrgea-nobg.png', status: 'blank', period: ['5 Dec 2026 · Dubai', '5 ديسمبر 2026 · دبي'] }
+    { id: 'wef', en: 'Annual Meeting of Global Future Leaders 2026', ar: 'المنتدى الاقتصادي العالمي', logo: A + '/assets/logo-wef.png', status: 'active', period: ['13–15 Oct 2026 · Dubai', '13–15 أكتوبر 2026 · دبي'] },
+    { id: 'agm', en: 'Annual Government Meetings of UAE', ar: 'الاجتماعات السنوية لحكومة دولة الإمارات', logo: A + '/assets/logo-agm-black.png', status: 'active', period: ['9–10 Nov 2026 · Abu Dhabi', '9–10 نوفمبر 2026 · أبوظبي'] },
+    { id: 'mbr', en: 'MBR Government Excellence Award', ar: 'جائزة محمد بن راشد للأداء الحكومي المتميز', logo: A + '/assets/logo-mbrgea-nobg.png', status: 'blank', period: ['5 Dec 2026 · Dubai', '5 ديسمبر 2026 · دبي'] }
   ];
   allEvents() { return [...this.EVENTS, ...(this.state.customEvents || [])]; }
   SEED_TEAMS = { agm: [
@@ -1285,7 +1288,7 @@ class DashboardApp extends React.Component {
             </div>
             <div className="landing-inner">
               <header className="landing-head">
-                <img className="moca-logo" src="/assets/logo-moca.png" alt="Ministry of Cabinet Affairs" />
+                <img className="moca-logo" src={A + "/assets/logo-moca.png"} alt="Ministry of Cabinet Affairs" />
                 <h1 className="landing-title" style={S('font-size:40px')}>{t.eventsTracker}</h1>
                 <p className="landing-sub" style={S('font-size:16px')}>{t.landingSub}</p>
               </header>
@@ -1335,7 +1338,7 @@ class DashboardApp extends React.Component {
                 <button className={'navitem ' + v.navSettings.cls} onClick={v.navSettings.go}><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 13.5a7.7 7.7 0 0 0 0-3l1.7-1.3-1.9-3.3-2 .8a7.7 7.7 0 0 0-2.6-1.5l-.3-2.1H10.7l-.3 2.1A7.7 7.7 0 0 0 7.8 5.7l-2-.8L3.9 8.2l1.7 1.3a7.7 7.7 0 0 0 0 3l-1.7 1.3 1.9 3.3 2-.8a7.7 7.7 0 0 0 2.6 1.5l.3 2.1h3.8l.3-2.1a7.7 7.7 0 0 0 2.6-1.5l2 .8 1.9-3.3z"></path></svg><span className="nvl">{v.navSettings.label}</span></button>
               </div>
             </aside>
-            <div className="maincol" style={{ background: "url('/assets/tracker-bg.png') center / cover no-repeat" }}>
+            <div className="maincol" style={{ background: `url('${A}/assets/tracker-bg.png') center / cover no-repeat` }}>
               <header className="topbar" style={S('background-color:#FFFFFFD1')}>
                 <div className="fx ac gap12" style={S('min-width:0')}>
                   <button className="backev" onClick={v.backToEvents}>{t.backToEvents}</button>

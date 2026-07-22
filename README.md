@@ -14,6 +14,25 @@ state/logic is preserved, so the look and behavior are identical to the sign-off
 
 ---
 
+## 📖 IT documentation
+
+Full architecture, database, and flow docs (mermaid diagrams render on GitHub):
+
+- [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) — system context, layers, environments, deployment topology
+- [`docs/DATABASE.md`](./docs/DATABASE.md) — PostgreSQL schema + ER diagram, enums, migrations, seeding
+- [`docs/FLOWS.md`](./docs/FLOWS.md) — SSO/auth, navigation, timeline editing, approvals, data-persistence flows
+
+## 📦 Current shipping build
+
+[`current-build/`](./current-build/) contains the **exact current UI** that powers the
+live demo — the latest Claude Design redesign, **plus the newest changes** (timeline
+editing for admins, loading-splash removed). It is a single self-contained HTML file
+(open `current-build/index.html`, or serve the folder). Use it to run/inspect the real UI
+offline. The Next.js source in `src/` is the production scaffold (SSO + Postgres) that the
+UI is being ported into.
+
+---
+
 ## Tech stack
 
 | Concern      | Choice |

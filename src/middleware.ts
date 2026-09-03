@@ -14,6 +14,7 @@ export function middleware(req: NextRequest) {
   if (
     pathname.startsWith('/signin') ||
     pathname.startsWith('/api/auth') ||
+    pathname.startsWith('/api/health') ||
     pathname.startsWith('/assets')
   ) {
     return NextResponse.next();

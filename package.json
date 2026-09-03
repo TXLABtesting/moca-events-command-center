@@ -1,25 +1,27 @@
 {
   "name": "moca-events-command-center",
-  "version": "1.0.0",
+  "version": "7.0.0",
   "private": true,
-  "description": "MOCA Events Command Center — bilingual (EN/AR) executive events dashboard for the UAE Ministry of Cabinet Affairs.",
+  "description": "MOCA Events Command Center — bilingual (EN/AR) executive events platform for the UAE Ministry of Cabinet Affairs. IT build: database-backed, SSO, server-enforced access.",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start",
-    "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev",
-    "prisma:deploy": "prisma migrate deploy",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:migrate": "prisma migrate deploy",
+    "db:migrate:dev": "prisma migrate dev",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:use-mysql": "node scripts/use-mysql.js mysql",
+    "db:use-postgres": "node scripts/use-mysql.js postgresql",
+    "deploy": "prisma migrate deploy && tsx prisma/seed.ts && next start",
+    "design:build": "node scripts/assemble-v7.js src/components/DashboardAppV7.jsx"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
-    "@auth/prisma-adapter": "^2.7.4",
-    "@prisma/client": "^6.2.1",
+    "@prisma/client": "^6.19.3",
     "next": "^15.5.20",
     "next-auth": "5.0.0-beta.25",
     "react": "18.3.1",
@@ -30,7 +32,7 @@
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
     "playwright": "^1.61.1",
-    "prisma": "^6.2.1",
+    "prisma": "^6.19.3",
     "tsx": "^4.19.2",
     "typescript": "^5.7.3"
   }

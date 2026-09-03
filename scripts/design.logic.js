@@ -1,87 +1,17 @@
-'use client';
-/* eslint-disable */
-// @ts-nocheck
-//
-// MOCA Events Command Center — Dashboard client component.
-//
-// This is a faithful React port of the approved Claude Design prototype
-// ("WEF Command Center.dc.html"). The logic class (state, data, handlers and
-// renderVals) is preserved verbatim from the prototype so behaviour is
-// identical; only render() is authored as JSX and the CSS-string style helper
-// `sty()` is added (the prototype's inline styles are CSS strings, which React
-// requires as objects). Design tokens & CSS live in globals.css, unchanged.
-//
-// Data source: in the demo build the seed arrays below drive the UI (fake
-// data). In the IT build these are replaced by the API/DB data provider and
-// the seed arrays are emptied — see src/lib/data-provider.ts.
-//
-import React from 'react';
+class Component extends DCLogic {
+  state = { lang: (() => { try { return JSON.parse(localStorage.getItem('wef_lang') || '"en"') || 'en'; } catch (e) { return 'en'; } })(), page: 'overview', railOpen: false, dash: 'all', sev: 'all', repW: 'all', repS: 'all', repO: 'all', repR: 'all', toast: null, admin: false, showLogin: false, loginErr: null, editIdx: null, detailIdx: null, edits: {}, members: null, photos: {}, order: null, submitWs: null, deptIdx: null, deptEditIdx: null, deptMembers: null, deptEdits: {}, acc: { wf: true }, teamView: null, actionKey: null, agendaKey: null, event: null, customEvents: [], showAddEvent: false, density: null, newLogoName: null, eventTeams: {}, showAddTeam: false, tlEdits: {}, tlKey: null, tlDayKey: null, tlMode: false };
 
-// Convert a CSS declaration string (e.g. "width:56px;background:var(--acc)")
-// into a React style object. Respects url(...) so uploaded data-URI photo
-// backgrounds (which contain ';' and ':') are not split incorrectly.
-function sty(s) {
-  if (!s) return undefined;
-  if (typeof s !== 'string') return s;
-  const out = {};
-  let buf = '', depth = 0;
-  const decls = [];
-  for (const ch of s) {
-    if (ch === '(') depth++;
-    else if (ch === ')') depth = Math.max(0, depth - 1);
-    if (ch === ';' && depth === 0) { decls.push(buf); buf = ''; }
-    else buf += ch;
+  _tick() {
+    if (typeof document !== 'undefined' && document.hidden) return;
+    const s = this.state;
+    const liveSeconds = !!s.event && !s.teamView && (s.page === 'overview' || s.page === 'timeline');
+    if (liveSeconds) { this.forceUpdate(); return; }
+    const m = Math.floor(Date.now() / 60000);
+    if (m !== this._lastMin) { this._lastMin = m; this.forceUpdate(); }
   }
-  if (buf.trim()) decls.push(buf);
-  for (const d of decls) {
-    const i = d.indexOf(':');
-    if (i < 0) continue;
-    let k = d.slice(0, i).trim();
-    const val = d.slice(i + 1).trim();
-    if (!k) continue;
-    if (k.startsWith('--')) { out[k] = val; continue; }
-    k = k.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
-    out[k] = val;
-  }
-  return out;
-}
-
-class DashboardApp extends React.Component {
-
-  // IT build: zero fake data. Seed arrays (class fields below) are emptied here
-  // so the app boots to a clean Events Tracker; real events/teams come from
-  // Postgres via /api/* (see componentDidMount → bootstrap()).
-  constructor(props) {
-    super(props);
-    if (process.env.NEXT_PUBLIC_DEMO_MODE !== 'true') {
-      this.WS = [];
-      this.RISKS = [];
-      this.DECISIONS = [];
-      this.MILESTONES = [];
-      this.ATTENTION = [];
-      this.DEPTS = [];
-      this.AGM_DEPTS = [];
-      this.DEPT_META = {};
-      this.AGM_META = {};
-      this.EVENT = [];
-      this.AGM_EVENT = [];
-      this.EVENTS = [];
-      this.SEED_TEAMS = { agm: [] };
-    }
-  }
-
-  bootstrap() {
-    if (process.env.NEXT_PUBLIC_DEMO_MODE === 'true') return;
-    fetch('/api/events')
-      .then((r) => (r.ok ? r.json() : { events: [] }))
-      .then((d) => { if (Array.isArray(d.events)) this.setState({ customEvents: d.events }); })
-      .catch(() => {});
-  }
-
-  state = { lang: 'en', page: 'overview', railOpen: false, dash: 'all', sev: 'all', repW: 'all', repS: 'all', repO: 'all', repR: 'all', toast: null, admin: false, showLogin: false, loginErr: null, editIdx: null, detailIdx: null, edits: {}, members: null, photos: {}, order: null, submitWs: null, deptIdx: null, deptEditIdx: null, deptMembers: null, deptEdits: {}, acc: { wf: true }, teamView: null, actionKey: null, agendaKey: null, event: null, customEvents: [], showAddEvent: false, density: null, newLogoName: null, eventTeams: {}, showAddTeam: false };
-
   componentDidMount() {
-    this._t = setInterval(() => this.forceUpdate(), 1000);
+    this._lastMin = -1;
+    this._t = setInterval(() => this._tick(), 1000);
     let edits = {}, members = null, photos = {}, order = null;
     try { edits = JSON.parse(localStorage.getItem('wef_edits') || '{}'); } catch (e) {}
     try { members = JSON.parse(localStorage.getItem('wef_members') || 'null'); } catch (e) {}
@@ -89,23 +19,50 @@ class DashboardApp extends React.Component {
     try { order = JSON.parse(localStorage.getItem('wef_order') || 'null'); } catch (e) {}
     let deptEdits = {}, deptMembers = null, customEvents = [];
     try { deptEdits = JSON.parse(localStorage.getItem('wef_deptedits') || '{}'); } catch (e) {}
+    let tlEdits = {}; try { tlEdits = JSON.parse(localStorage.getItem('wef_tledits') || '{}'); } catch (e) {}
     try { deptMembers = JSON.parse(localStorage.getItem('wef_deptmembers') || 'null'); } catch (e) {}
     try { customEvents = JSON.parse(localStorage.getItem('wef_custom_events') || '[]'); } catch (e) {}
+    let eventEdits = {}, eventDeleted = [];
+    try { eventEdits = JSON.parse(localStorage.getItem('wef_event_edits') || '{}'); } catch (e) {}
+    try { eventDeleted = JSON.parse(localStorage.getItem('wef_event_deleted') || '[]'); } catch (e) {}
+    let role = 'inputter', myStreams = {}, leadId = 'ali';
+    try { leadId = JSON.parse(localStorage.getItem('wef_lead') || '"ali"') || 'ali'; } catch (e) {}
+    try { role = JSON.parse(localStorage.getItem('wef_role') || '"inputter"') || 'inputter'; } catch (e) {}
+    try { myStreams = JSON.parse(localStorage.getItem('wef_mystream') || '{}'); } catch (e) {}
     let eventTeams = {};
     try { eventTeams = JSON.parse(localStorage.getItem('wef_event_teams') || '{}'); } catch (e) {}
+    let approvals = {}, design = {}, tasks = {}, teamlog = {}, taskOv = {};
+    try { approvals = JSON.parse(localStorage.getItem('wef_approvals') || '{}'); } catch (e) {}
+    try { design = JSON.parse(localStorage.getItem('wef_design') || '{}'); } catch (e) {}
+    try { tasks = JSON.parse(localStorage.getItem('wef_tasks') || '{}'); } catch (e) {}
+    try { if (!localStorage.getItem('wef_mtdemo')) {
+      tasks.d1 = [...(tasks.d1 || []), { t: ['Messaging alignment meeting with department leads', 'اجتماع مواءمة الرسائل مع قادة الإدارات'], o: 'Ali Essa', s: 'p', pr: 'h', d: '21 Jul', dep: ['—', '—'], nx: ['Share aligned messaging pack after the meeting', 'مشاركة حزمة الرسائل بعد الاجتماع'], ap: 'req',
+        mt: { rec: 'Department leads (11), Khawla Alsuwaidi', pur: 'Align public-announcement messaging across departments', loc: 'MOCA HQ — Meeting Room 3', d: '2026-07-21', tm: '10:00 - 11:00' } }];
+      localStorage.setItem('wef_tasks', JSON.stringify(tasks)); localStorage.setItem('wef_mtdemo', '1');
+    } } catch (e) {}
+    try { teamlog = JSON.parse(localStorage.getItem('wef_teamlog') || '{}'); } catch (e) {}
+    try { taskOv = JSON.parse(localStorage.getItem('wef_taskov') || '{}'); } catch (e) {}
+    let taskDel = {};
+    try { taskDel = JSON.parse(localStorage.getItem('wef_taskdel') || '{}'); } catch (e) {}
+    let empDir = [];
+    try { empDir = JSON.parse(localStorage.getItem('wef_empdir') || '[]'); } catch (e) {}
+    if (!Array.isArray(empDir)) empDir = [];
+    let wfNom = {};
+    try { wfNom = JSON.parse(localStorage.getItem('wef_wfnom') || '{}'); } catch (e) {}
+    let hotelAssign = {};
+    try { hotelAssign = JSON.parse(localStorage.getItem('wef_hotel') || '{}'); } catch (e) {}
+    let fbOpen = {}, feedback = {};
+    try { fbOpen = JSON.parse(localStorage.getItem('wef_fbopen') || '{}'); } catch (e) {}
+    try { feedback = JSON.parse(localStorage.getItem('wef_feedback') || '{}'); } catch (e) {}
+    let baseHide = {};
+    try { baseHide = JSON.parse(localStorage.getItem('wef_basehide') || '{}'); } catch (e) {}
     if (!localStorage.getItem('wef_seed_agm_v2')) { eventTeams = { ...eventTeams, agm: this.SEED_TEAMS.agm }; try { localStorage.setItem('wef_event_teams', JSON.stringify(eventTeams)); localStorage.setItem('wef_seed_agm_v2', '1'); } catch (e) {} }
     const seededDM = this.seedDeptMembers();
     deptMembers = deptMembers ? { ...seededDM, ...deptMembers } : seededDM;
-    this.setState({ edits, members: members || this.seedMembers(), photos, order, deptEdits, deptMembers, customEvents, eventTeams });
+    this.setState({ edits, members: members || this.seedMembers(), photos, order, deptEdits, deptMembers, customEvents, eventEdits, eventDeleted, eventTeams, empDir, wfNom, fbOpen, feedback, hotelAssign, role, admin: role === 'admin', myStreams, leadId, approvals, design, tasks, teamlog, taskOv, taskDel, baseHide, tlEdits, taskDrafts: [], users: (() => { try { const u = JSON.parse(localStorage.getItem('wef_users') || 'null'); if (u && u.length) return u; } catch (e) {} return this.seedUsers(); })(), authed: (() => { try { return sessionStorage.getItem('wef_auth') === '1'; } catch (e) { return false; } })() });
     this.applyHash();
     this._hashFn = () => this.applyHash();
     window.addEventListener('hashchange', this._hashFn);
-    // Demo-only: role switcher (src/app/AppClient.tsx) maps roles to Management Access.
-    if (process.env.NEXT_PUBLIC_DEMO_MODE === 'true') {
-      this._roleFn = (e) => { try { this.setState({ admin: !!(e.detail && e.detail.admin) }); } catch (err) {} };
-      window.addEventListener('moca-demo-role', this._roleFn);
-    }
-    this.bootstrap();
   }
   applyHash() {
     try {
@@ -128,7 +85,239 @@ class DashboardApp extends React.Component {
   }
 
   persist(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {} }
+
+  /* ===== TEAM LOG (dated entries per block) ===== */
+  teamLogFor(teamId) { const k = (this.state.event || 'wef') + ':' + teamId; return (this.state.teamlog || {})[k] || {}; }
+  openLogAdd = (teamId, kind) => (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.setState({ logAdd: { teamId, kind } }); };
+  closeLogAdd = () => this.setState({ logAdd: null });
+  toggleLogHist = (kind) => (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.setState(s => ({ logHist: { ...(s.logHist || {}), [kind]: !(s.logHist || {})[kind] } })); };
+  openLogHist = (teamId, kind) => (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.setState({ logHistView: { teamId, kind }, logDelKey: null }); };
+  closeLogHist = () => this.setState({ logHistView: null, logDelKey: null });
+  askLogDel = (d) => () => this.setState({ logDelKey: d });
+  cancelLogDel = () => this.setState({ logDelKey: null });
+  confirmLogDel = (teamId, kind, d) => () => {
+    const key = (this.state.event || 'wef') + ':' + teamId;
+    const tl = { ...(this.state.teamlog || {}) };
+    const cur = { ...(tl[key] || {}) };
+    cur[kind] = (cur[kind] || []).filter(en => en.d !== d);
+    if (!cur[kind].length) delete cur[kind];
+    tl[key] = cur;
+    this.persist('wef_teamlog', tl);
+    this.setState({ teamlog: tl, logDelKey: null });
+  };
+  toggleLogShow = (teamId, kind, d) => () => {
+    const key = (this.state.event || 'wef') + ':' + teamId;
+    const tl = { ...(this.state.teamlog || {}) };
+    const cur = { ...(tl[key] || {}) };
+    cur[kind] = (cur[kind] || []).map(en => en.d === d ? { ...en, hide: !en.hide } : en);
+    tl[key] = cur;
+    this.persist('wef_teamlog', tl);
+    this.setState({ teamlog: tl });
+  };
+  baseHideFor(teamId, kind) { const key = (this.state.event || 'wef') + ':' + teamId; const bh = ((this.state.baseHide || {})[key] || {})[kind] || {}; return { h: bh.h || [], x: bh.x || [] }; }
+  _patchBaseHide(teamId, kind, patch) {
+    const key = (this.state.event || 'wef') + ':' + teamId;
+    const all = { ...(this.state.baseHide || {}) };
+    const forKey = { ...(all[key] || {}) };
+    forKey[kind] = patch;
+    all[key] = forKey;
+    this.persist('wef_basehide', all);
+    this.setState({ baseHide: all, logDelKey: null });
+  }
+  toggleBaseShow = (teamId, kind, i) => () => {
+    const cur = this.baseHideFor(teamId, kind);
+    const h = cur.h.includes(i) ? cur.h.filter(v => v !== i) : [...cur.h, i];
+    this._patchBaseHide(teamId, kind, { h, x: cur.x });
+  };
+  confirmBaseDel = (teamId, kind, i) => () => {
+    const cur = this.baseHideFor(teamId, kind);
+    this._patchBaseHide(teamId, kind, { h: cur.h, x: [...cur.x, i] });
+  };
+  saveLogAdd = (e) => {
+    e.preventDefault();
+    const la = this.state.logAdd; if (!la) return;
+    const txt = (new FormData(e.target).get('txt') || '').trim(); if (!txt) return;
+    const key = (this.state.event || 'wef') + ':' + la.teamId;
+    const tl = { ...(this.state.teamlog || {}) };
+    const cur = { ...(tl[key] || {}) };
+    cur[la.kind] = [...(cur[la.kind] || []), { t: txt, d: Date.now() }];
+    tl[key] = cur;
+    this.persist('wef_teamlog', tl);
+    this.setState({ teamlog: tl, logAdd: null });
+  };
   componentWillUnmount() { clearInterval(this._t); clearTimeout(this._tt); }
+
+  // ===== APPROVALS =====
+  APPR_PR = { h: ['High', 'عالية'], m: ['Medium', 'متوسطة'], l: ['Low', 'منخفضة'] };
+  apprStoreFor(ev) { const a = this.state.approvals || {}; const s = a[ev] || {}; return { overrides: s.overrides || {}, manual: s.manual || [] }; }
+  saveApprStore(ev, store) { const a = { ...(this.state.approvals || {}), [ev]: store }; this.persist('wef_approvals', a); this.setState({ approvals: a }); }
+  openAppr = (id) => (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.setState({ apprKey: id, apprAction: null, apprInput: '' }); };
+  closeAppr = () => this.setState({ apprKey: null, apprAction: null, apprInput: '' });
+  setApprInput = (e) => this.setState({ apprInput: e.target.value });
+  startCardAct = (id, mode) => (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.setState({ apprCardAct: { id, mode }, apprCardInput: '' }); };
+  cancelCardAct = (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.setState({ apprCardAct: null, apprCardInput: '' }); };
+  setCardInput = (e) => this.setState({ apprCardInput: e.target.value });
+  confirmCardReject = (id) => (e) => { if (e && e.stopPropagation) e.stopPropagation(); const r = (this.state.apprCardInput || '').trim(); this.patchAppr(id, { status: 'rejected', decidedAt: Date.now(), reason: r }); this.setState({ apprCardAct: null, apprCardInput: '' }); this.flashToast(this.state.lang === 'ar' ? 'تم رفض الطلب' : 'Request rejected'); };
+  confirmCardInfo = (id) => (e) => { if (e && e.stopPropagation) e.stopPropagation(); const n = (this.state.apprCardInput || '').trim(); if (!n) return; this.patchAppr(id, { infoReq: { note: n, at: Date.now() } }); this.setState({ apprCardAct: null, apprCardInput: '' }); this.flashToast(this.state.lang === 'ar' ? 'تم طلب معلومات إضافية' : 'More information requested'); };
+  startApprAction = (mode) => () => this.setState({ apprAction: mode, apprInput: '' });
+  patchAppr(id, patch) {
+    const ev = this.state.event; const cur = this.apprStoreFor(ev);
+    const store = { overrides: { ...cur.overrides }, manual: [...cur.manual] };
+    if (id.indexOf('man:') === 0) { store.manual = store.manual.map(m => m.id === id ? { ...m, ...patch } : m); }
+    else { store.overrides[id] = { ...(store.overrides[id] || {}), ...patch }; }
+    this.saveApprStore(ev, store);
+  }
+  apprComments(id) { const ev = this.state.event; const s = this.apprStoreFor(ev); if (id.indexOf('man:') === 0) { const m = s.manual.find(x => x.id === id); return (m && m.comments) || []; } return (s.overrides[id] && s.overrides[id].comments) || []; }
+  approveAppr = (id) => () => { this.patchAppr(id, { status: 'approved', decidedAt: Date.now() }); this.flashToast(this.state.lang === 'ar' ? 'تم اعتماد الطلب' : 'Approval granted'); this.setState({ apprAction: 'approved' }); };
+  confirmReject = (id) => () => { const r = (this.state.apprInput || '').trim(); this.patchAppr(id, { status: 'rejected', decidedAt: Date.now(), reason: r }); this.flashToast(this.state.lang === 'ar' ? 'تم رفض الطلب' : 'Approval rejected'); this.setState({ apprAction: 'rejected', apprInput: '' }); };
+  confirmComment = (id) => () => { const c = (this.state.apprInput || '').trim(); if (!c) return; const comments = [...this.apprComments(id), { by: this.state.lang === 'ar' ? 'مدير المشروع' : 'Project Manager', text: c, at: Date.now() }]; this.patchAppr(id, { comments }); this.flashToast(this.state.lang === 'ar' ? 'تمت إضافة التعليق' : 'Comment added'); this.setState({ apprAction: null, apprInput: '' }); };
+  openCreateAppr = () => { this._apprFile = null; this.setState({ showCreateAppr: true, apprPrefillTeam: '', apprFileName: null }); };
+  openCreateApprFor = (teamName) => () => { this._apprFile = null; this.setState({ showCreateAppr: true, apprPrefillTeam: teamName, apprFileName: null }); };
+  closeCreateAppr = () => { this._apprFile = null; this.setState({ showCreateAppr: false, apprFileName: null }); };
+  pickApprFile = () => {
+    const inp = document.createElement('input'); inp.type = 'file';
+    inp.onchange = (e) => {
+      const file = e.target.files && e.target.files[0]; if (!file) return;
+      if (file.size > 2 * 1024 * 1024) { this.flashToast(this.state.lang === 'ar' ? 'الحد الأقصى للمرفق 2 ميغابايت' : 'Attachment must be under 2 MB'); return; }
+      const rd = new FileReader();
+      rd.onload = () => { this._apprFile = { name: file.name, type: file.type || 'application/octet-stream', data: rd.result }; this.setState({ apprFileName: file.name }); };
+      rd.readAsDataURL(file);
+    };
+    inp.click();
+  };
+  createApproval = (e) => {
+    e.preventDefault(); const ev = this.state.event; if (!ev) return; const f = new FormData(e.target); const g = k => (f.get(k) || '').trim();
+    const title = g('title'); if (!title) return;
+    const item = { id: 'man:' + Date.now(), title, team: g('team') || '—', requestedBy: g('by') || '—', priority: g('priority') || 'm', due: g('due') || '—', desc: g('desc') || '', status: 'pending', createdAt: Date.now(), comments: [], attach: this._apprFile || null };
+    const store = this.apprStoreFor(ev); this.saveApprStore(ev, { ...store, manual: [item, ...store.manual] });
+    this._apprFile = null;
+    this.setState({ showCreateAppr: false, apprFileName: null }); this.flashToast(this.state.lang === 'ar' ? 'تم إنشاء طلب الاعتماد' : 'Approval request created');
+  };
+
+  addTaskDraft = () => this.setState(s => ({ taskDrafts: [...(s.taskDrafts || []), { task: '', owner: '', s: 'g', pr: 'm', due: '', dep: '', nx: '' }] }));
+  removeTaskDraft = (i) => this.setState(s => ({ taskDrafts: (s.taskDrafts || []).filter((_, j) => j !== i) }));
+  setTaskDraft = (i, field) => (e) => { const val = e && e.target ? e.target.value : e; this.setState(s => { const arr = [...(s.taskDrafts || [])]; arr[i] = { ...arr[i], [field]: val }; return { taskDrafts: arr }; }); };
+
+  // ===== EVENT DESIGN =====
+  DESIGN_SECTIONS = [
+    { key: 'floor', en: 'Floor Plan', ar: 'مخطط الموقع', icon: 'grid' },
+    { key: 'branding', en: 'Branding / Visual Identity', ar: 'الهوية البصرية والعلامة', icon: 'brush' }
+  ];
+  DESIGN_SEED = {
+    wef: {
+      owner: ['Sumaya Al Hakim', 'سمية الحكيم'],
+      floor: { status: 'done', owner: ['Sumaya Al Hakim', 'سمية الحكيم'], updated: '01 Jul', files: [
+        { name: ['Madinat Jumeirah — Level 1', 'مدينة جميرا — الطابق الأول'], type: 'PDF', date: '28 Jun', by: ['Sumaya Al Hakim', 'سمية الحكيم'], status: 'approved' },
+        { name: ['Main hall floor layout', 'مخطط القاعة الرئيسية'], type: 'DWG', date: '30 Jun', by: ['Maria Ahli', 'ماريا أهلي'], status: 'review' } ] },
+      renders: { status: 'review', owner: ['Design Studio', 'استوديو التصميم'], updated: '02 Jul', files: [
+        { name: ['Plenary stage render v3', 'تصور المسرح الرئيسي 3'], type: 'JPG', date: '02 Jul', by: ['Design Studio', 'استوديو التصميم'], status: 'review' },
+        { name: ['Entrance concept', 'تصور المدخل'], type: 'PNG', date: '29 Jun', by: ['Design Studio', 'استوديو التصميم'], status: 'draft' } ] },
+      branding: { status: 'inprogress', owner: ['Sumaya Al Hakim', 'سمية الحكيم'], updated: '30 Jun', files: [
+        { name: ['Event brand guidelines', 'دليل الهوية'], type: 'PDF', date: '25 Jun', by: ['Sumaya Al Hakim', 'سمية الحكيم'], status: 'approved' },
+        { name: ['Logo lockups (AR/EN)', 'الشعارات (عربي/إنجليزي)'], type: 'SVG', date: '26 Jun', by: ['Sumaya Al Hakim', 'سمية الحكيم'], status: 'approved' },
+        { name: ['Welcome card artwork', 'تصميم بطاقة الترحيب'], type: 'AI', date: '30 Jun', by: ['Maria Ahli', 'ماريا أهلي'], status: 'review' } ] },
+      stage: { status: 'inprogress', owner: ['Maria Ahli', 'ماريا أهلي'], updated: '01 Jul', files: [
+        { name: ['Stage & AV setup plan', 'خطة المسرح والصوتيات'], type: 'PDF', date: '01 Jul', by: ['Maria Ahli', 'ماريا أهلي'], status: 'review' } ] },
+      seating: { status: 'inprogress', owner: ['Abdulla Ali', 'عبدالله علي'], updated: '29 Jun', files: [] },
+      signage: { status: 'inprogress', owner: ['Maria Ahli', 'ماريا أهلي'], updated: '28 Jun', files: [
+        { name: ['Wayfinding master', 'المخطط الإرشادي الرئيسي'], type: 'PDF', date: '28 Jun', by: ['Maria Ahli', 'ماريا أهلي'], status: 'draft' } ] },
+      files: { status: 'inprogress', owner: ['Sumaya Al Hakim', 'سمية الحكيم'], updated: '02 Jul', files: [
+        { name: ['Design brief pack', 'حزمة موجز التصميم'], type: 'ZIP', date: '02 Jul', by: ['Sumaya Al Hakim', 'سمية الحكيم'], status: 'uploaded' } ] }
+    },
+    agm: {
+      owner: ['Shaima Khammas', 'شيماء خماس'],
+      floor: { status: 'review', owner: ['Shaima Khammas', 'شيماء خماس'], updated: '07 Jul', files: [
+        { name: ['Council hall layout', 'مخطط قاعة المجلس'], type: 'PDF', date: '06 Jul', by: ['Shaima Khammas', 'شيماء خماس'], status: 'review' } ] },
+      renders: { status: 'inprogress', owner: ['People Team', 'فريق People'], updated: '07 Jul', files: [
+        { name: ['Main hall concept', 'تصور القاعة الرئيسية'], type: 'JPG', date: '05 Jul', by: ['People Team', 'فريق People'], status: 'draft' } ] },
+      branding: { status: 'inprogress', owner: ['Sumaya Al Hakim', 'سمية الحكيم'], updated: '06 Jul', files: [
+        { name: ['AGM visual identity', 'الهوية البصرية للاجتماعات'], type: 'PDF', date: '04 Jul', by: ['Sumaya Al Hakim', 'سمية الحكيم'], status: 'approved' } ] },
+      stage: { status: 'inprogress', owner: ['Sumaya Al Hakim', 'سمية الحكيم'], updated: '07 Jul', files: [] },
+      seating: { status: 'review', owner: ['Abdulla Ali', 'عبدالله علي'], updated: '07 Jul', files: [
+        { name: ['VIP seating draft', 'مسودة تجليس كبار الشخصيات'], type: 'PDF', date: '07 Jul', by: ['Abdulla Ali', 'عبدالله علي'], status: 'review' } ] },
+      signage: { status: 'inprogress', owner: ['People Team', 'فريق People'], updated: '05 Jul', files: [] },
+      files: { status: 'inprogress', owner: ['Shaima Khammas', 'شيماء خماس'], updated: '07 Jul', files: [] }
+    }
+  };
+  DESIGN_PCT = { done: 100, review: 70, inprogress: 40, empty: 0 };
+  designStoreFor(ev) { const d = this.state.design || {}; return d[ev] || {}; }
+  saveDesignStore(ev, store) { const d = { ...(this.state.design || {}), [ev]: store }; this.persist('wef_design', d); this.setState({ design: d }); }
+  deleteDesignFile = (key, idx) => (e) => { if (e && e.stopPropagation) e.stopPropagation(); const ev = this.state.event; const store = this.designStoreFor(ev); const secStore = store[key] || {}; const base = (this.DESIGN_SEED[ev] || {})[key] || {}; const curFiles = secStore.files || base.files || []; const files = curFiles.filter((_, i) => i !== idx); this.saveDesignStore(ev, { ...store, [key]: { ...secStore, files, updated: this.todayStr(), status: secStore.status || base.status || 'inprogress' } }); };
+  openDesignSec = (key) => (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.setState({ designKey: key }); };
+  closeDesignSec = () => this.setState({ designKey: null });
+  todayStr() { const d = new Date(); const M = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']; return String(d.getDate()).padStart(2, '0') + ' ' + M[d.getMonth()]; }
+  uploadDesign = (key) => (e) => {
+    if (e && e.stopPropagation) e.stopPropagation();
+    const ar = this.state.lang === 'ar';
+    const inp = document.createElement('input'); inp.type = 'file';
+    inp.onchange = (ce) => {
+      const file = ce.target.files && ce.target.files[0]; if (!file) return;
+      if (file.size > 2 * 1024 * 1024) { this.flashToast(ar ? 'الحد الأقصى للملف 2 ميغابايت' : 'File must be under 2 MB'); return; }
+      const rd = new FileReader();
+      rd.onload = () => {
+        const ev = this.state.event;
+        const store = this.designStoreFor(ev); const secStore = store[key] || {};
+        const base = (this.DESIGN_SEED[ev] || {})[key] || {};
+        const curFiles = secStore.files || base.files || [];
+        const m = /\.([A-Za-z0-9]+)$/.exec(file.name);
+        const type = m ? m[1].toUpperCase() : 'FILE';
+        const f = { name: [file.name, file.name], type, date: this.todayStr(), by: [ar ? 'مدير المشروع' : 'Project Manager', 'مدير المشروع'], status: 'draft', data: rd.result, mime: file.type || 'application/octet-stream' };
+        try { this.saveDesignStore(ev, { ...store, [key]: { ...secStore, files: [...curFiles, f], updated: this.todayStr(), status: secStore.status || base.status || 'inprogress' } }); this.flashToast(ar ? 'تم رفع الملف' : 'File uploaded'); }
+        catch (err) { this.flashToast(ar ? 'تعذر حفظ الملف — مساحة التخزين ممتلئة' : 'Could not save file — browser storage is full'); }
+      };
+      rd.readAsDataURL(file);
+    };
+    inp.click();
+  };
+  _designBlob(f) {
+    if (f.data) { const parts = f.data.split(','); const mime = (parts[0].match(/data:(.*?)[;,]/) || [])[1] || f.mime || 'application/octet-stream'; const bin = atob(parts[1]); const arr = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i); return new Blob([arr], { type: mime }); }
+    const name = Array.isArray(f.name) ? f.name[0] : String(f.name || 'file');
+    return new Blob(['Placeholder content for "' + name + '" (' + (f.type || 'FILE') + ') — demo asset in this prototype. Uploaded files download with their real content.'], { type: 'text/plain' });
+  }
+  _designFileName(f) { const n = Array.isArray(f.name) ? f.name[0] : String(f.name || 'file'); return f.data ? n : n + '.txt'; }
+  viewDesignFile = (f) => (e) => {
+    if (e && e.stopPropagation) e.stopPropagation();
+    const url = URL.createObjectURL(this._designBlob(f));
+    window.open(url, '_blank');
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  };
+  downloadDesignFile = (f) => (e) => {
+    if (e && e.stopPropagation) e.stopPropagation();
+    const url = URL.createObjectURL(this._designBlob(f));
+    const a = document.createElement('a'); a.href = url; a.download = this._designFileName(f); document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  };
+
+  // ===== CALENDAR =====
+  MONTH_IDX = { Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5, Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11 };
+  parseEventStart(period) {
+    const p = Array.isArray(period) ? period[0] : (period || '');
+    const dayM = p.match(/(\d{1,2})(?!\d)/);
+    const monM = p.match(/([A-Za-z]{3})/);
+    const yrM = p.match(/(\d{4})/);
+    if (!dayM || !monM || !yrM) return null;
+    const mi = this.MONTH_IDX[monM[1]]; if (mi == null) return null;
+    return { d: +dayM[1], m: mi, y: +yrM[1] };
+  }
+  calShift = (delta) => () => {
+    let m = (this.state.calMonth == null ? 9 : this.state.calMonth) + delta;
+    let y = (this.state.calYear == null ? 2026 : this.state.calYear);
+    while (m < 0) { m += 12; y -= 1; } while (m > 11) { m -= 12; y += 1; }
+    this.setState({ calMonth: m, calYear: y });
+  };
+  designIcon(type) {
+    const P = {
+      grid: ['M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z'],
+      cube: ['M12 3l8 4.5v9L12 21l-8-4.5v-9z', 'M12 3v18M4 7.5l8 4.5 8-4.5'],
+      brush: ['M4 20c2-1 2-3 4-3s2 2 4 1M14 11l6-6a2 2 0 0 0-3-3l-6 6', 'M11 8l5 5'],
+      stage: ['M3 7h18M5 7l2 12M19 7l-2 12M9 12h6'],
+      seat: ['M6 10V6a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v4M4 10h16v5H4zM7 15v4M17 15v4'],
+      sign: ['M12 3v3M6 6h9l3 3-3 3H6zM12 12v9'],
+      file: ['M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z', 'M14 3v5h5']
+    };
+    const paths = P[type] || P.file;
+    return React.createElement('svg', { viewBox: '0 0 24 24', width: 20, height: 20, fill: 'none', stroke: 'currentColor', strokeWidth: 1.7, strokeLinecap: 'round', strokeLinejoin: 'round' }, paths.map((d, i) => React.createElement('path', { key: i, d })));
+  }
 
   // [en, ar] pairs for all data text
   WS = [
@@ -383,7 +572,7 @@ class DashboardApp extends React.Component {
   T = {
     en: {
       brandTitle: 'WEF Operational Tracker', brandSub: 'Executive Operations Dashboard · Ministerial & Senior Management Oversight',
-      viewDetails: 'View details', detUpdates: 'Updates', detChallenges: 'Challenges', detApprovals: 'Pending Approvals', detNext: 'Next Steps', genGuide: 'Generate Guide', moveTo: 'Move to team', progStatus: 'Programme Status', wsCount: '18 workstreams',
+      viewDetails: 'View details', detUpdates: 'Updates', detChallenges: 'Challenges', detApprovals: 'Pending Approvals', detNext: 'Next Steps', logAdd: 'Add', logSave: 'Save', logCancel: 'Cancel', logPh: 'Write an entry…', logHistT: 'Submission history', logHistEmpty: 'No entries yet.', logDelQ: 'Delete?', logShowL: 'Show on card', logHideL: 'Hide from card', taskAddL: 'Add task', taskAddT: 'Add task', taskEditT: 'Edit task', taskDeleteL: 'Delete task', taskDeleteQ: 'Delete this task?', taskDeleteYes: 'Yes, delete', genGuide: 'Generate Guide', moveTo: 'Move to team', progStatus: 'Programme Status', wsCount: '18 workstreams',
       days: 'days', hrs: 'hrs', min: 'min', sec: 'sec', toWef: 'to WEF · 13 Oct 2026', lastUpdated: 'Last updated · 02 Jul 2026, 17:40 GST',
       nav: ['Executive Overview','Command Center','Teams & Workstreams','Org Structure','Timeline','Risks & Blockers','Pending Decisions','Submit Update','Reports','Executive Summary'],
       adminBtn: 'Admin', signOut: 'Sign out', adminTitle: 'Administrator Access', adminSub: 'Sign in to edit workstream data and manage team members.', password: 'Password', signIn: 'Sign In', cancel: 'Cancel', wrongPwd: 'Incorrect password. Please try again.',
@@ -394,7 +583,8 @@ class DashboardApp extends React.Component {
       cdTitle: 'Countdown to Event Day', cdEvt1: 'WEF Annual Meeting of the Global Future Councils', cdEvt2: '13 October 2026 · Dubai, UAE',
       tlSummary: 'Traffic-Light Summary', green: 'Green', amber: 'Amber', red: 'Red', tlNote: '18 workstreams · reviewed weekly by the Operational PM',
       execSum: 'Executive Summary', top5: 'Top 5 Management Attention Items', due: 'Due', updated: 'Updated',
-      dashTitle: 'Operational Tracker', dashSub: 'Select a team to open its full operational view.',
+      dashTitle: 'Operational Tracker', myStreamsSec: 'My Streams', otherStreamsSec: 'Other Streams', dashSub: 'Select a team to open its full operational view.',
+      backToTeam: 'Back to team', allTasksSub: 'Complete task list for this workstream.',
       ach: 'Key Achievement', blk: 'Current Blocker', nxt: 'Next Action',
       teamsTitle: 'Teams & Workstreams', teamsSub: 'Operational structure for WEF 2026, under the Operations Chief with PM-led follow-up across all teams.',
       pmName: 'Khawla Alsuwaidi', pmRole: 'Operational PM · Cross-Team Follow-up & Executive Reporting', chiefName: 'Fouzia AlTayer AlMarri', chiefRole: 'Operations Chief',
@@ -406,9 +596,11 @@ class DashboardApp extends React.Component {
       dTitle: 'Pending Decisions', dSub: 'Decisions required from the Minister and senior management, ordered by deadline.', awaiting: '6 awaiting decision',
       background: 'Background', options: 'Options', recAction: 'Recommended Action', impDelay: 'Impact if Delayed',
       sTitle: 'Submit Workstream Update', sSub: 'Team leads submit weekly updates here. Submissions flow to the Operational PM and are consolidated into the executive dashboard.',
-      fWs: 'Workstream', fLead: 'Team Lead Name', fProg: 'Progress %', fStatus: 'Status', fAch: 'Achievements Since Last Update', fBlk: 'Current Blockers', fRisks: 'Risks', fBudget: 'Budget Updates', fAppr: 'Pending Approvals', fNext: 'Next Steps', fSupport: 'Required Management Support', fNotes: 'Attachments / Notes', fDate: 'Update Date',
+      fWs: 'Workstream', fLead: 'Team Lead Name', fProg: 'Progress %', fStatus: 'Status', fAch: 'Achievements Since Last Update', fBlk: 'Updates', fRisks: 'Challenges', fBudget: 'Pending Approvals', fAppr: 'Next Steps', fNext: 'Next Steps', fSupport: 'Required Management Support', fNotes: 'Attachments / Notes', fDate: 'Update Date',
       phLead: 'e.g. Shaima Khammas', phAch: 'Completed items, signed contracts, confirmed approvals…', phNotes: 'Link or reference to supporting documents',
       submitNote: 'Submissions are reviewed by Khawla Alsuwaidi before publication to leadership.', submitBtn: 'Submit Update',
+      addTasksL: 'Add Tasks / Action Items', addTasksSub: 'Add new tracker tasks for this team. They appear in the Operational Tracker table.', addTaskBtn: 'Add Task', taskNL: 'Task', taskPh: 'Describe the action or task',
+      guideTitle: 'Generate Team Guide', guideSub: 'Choose what to include in the generated report.', guideLeaders: 'Team leaders & deputies only', guideMembers: 'All members', guideUpdates: 'Updates & action items',
       repTitle: 'Reports', repSub: 'Weekly executive summaries and filterable workstream reporting.', exportPdf: 'Export to PDF', download: 'Download Report', printView: 'Print View',
       weekSum: 'Weekly Executive Summary', weekLabel: 'Week 27 · 29 Jun – 02 Jul 2026', issued: 'Issued to Minister',
       progWeek: 'Progress This Week', progWeekTxt: 'Emirati hospitality approvals completed (Dubai Chocolate confirmed); cultural dances selected — Al Ahila for opening, Al Ayala for welcome; security checks commencing; food tasting scheduled at Madinat Jumeirah.',
@@ -440,7 +632,7 @@ class DashboardApp extends React.Component {
     },
     ar: {
       brandTitle: 'متتبع عمليات المنتدى الاقتصادي العالمي', brandSub: 'لوحة العمليات التنفيذية · لإشراف معالي الوزير والإدارة العليا',
-      viewDetails: 'عرض التفاصيل', detUpdates: 'التحديثات', detChallenges: 'التحديات', detApprovals: 'الموافقات المعلّقة', detNext: 'الخطوات التالية', genGuide: 'إنشاء الدليل', moveTo: 'نقل إلى فريق', progStatus: 'حالة البرنامج', wsCount: '18 مسار عمل',
+      viewDetails: 'عرض التفاصيل', detUpdates: 'التحديثات', detChallenges: 'التحديات', detApprovals: 'الموافقات المعلّقة', logAdd: 'إضافة', logSave: 'حفظ', logCancel: 'إلغاء', logPh: 'اكتب إدخالاً…', logHistT: 'سجل الإدخالات', logHistEmpty: 'لا توجد إدخالات بعد.', logDelQ: 'حذف؟', logShowL: 'إظهار في البطاقة', logHideL: 'إخفاء من البطاقة', taskAddL: 'إضافة مهمة', taskAddT: 'إضافة مهمة', taskEditT: 'تعديل المهمة', taskDeleteL: 'حذف المهمة', taskDeleteQ: 'حذف هذه المهمة؟', taskDeleteYes: 'نعم، احذف', detNext: 'الخطوات التالية', genGuide: 'إنشاء الدليل', moveTo: 'نقل إلى فريق', progStatus: 'حالة البرنامج', wsCount: '18 مسار عمل',
       days: 'يوم', hrs: 'ساعة', min: 'دقيقة', sec: 'ثانية', toWef: 'حتى المنتدى · 13 أكتوبر 2026', lastUpdated: 'آخر تحديث · 2 يوليو 2026، 17:40 بتوقيت الخليج',
       nav: ['النظرة التنفيذية','مركز القيادة','الفرق ومسارات العمل','الهيكل التنظيمي','الجدول الزمني','المخاطر والمعوقات','القرارات المعلّقة','رفع التحديثات','التقارير','الملخص التنفيذي'],
       adminBtn: 'المشرف', signOut: 'تسجيل الخروج', adminTitle: 'دخول المشرف', adminSub: 'سجّل الدخول لتعديل بيانات مسارات العمل وإدارة أعضاء الفرق.', password: 'كلمة المرور', signIn: 'تسجيل الدخول', cancel: 'إلغاء', wrongPwd: 'كلمة المرور غير صحيحة. حاول مرة أخرى.',
@@ -451,7 +643,8 @@ class DashboardApp extends React.Component {
       cdTitle: 'العد التنازلي ليوم الحدث', cdEvt1: 'الاجتماع السنوي لمجالس المستقبل العالمية', cdEvt2: '13 أكتوبر 2026 · دبي، الإمارات',
       tlSummary: 'ملخص المؤشرات', green: 'أخضر', amber: 'برتقالي', red: 'أحمر', tlNote: '18 مسار عمل · تُراجع أسبوعياً من مديرة المشروع التشغيلية',
       execSum: 'الملخص التنفيذي', top5: 'أهم 5 بنود لاهتمام الإدارة', due: 'الاستحقاق', updated: 'آخر تحديث',
-      dashTitle: 'متتبع العمليات', dashSub: 'ملكية الفرق ومتابعة إجراءاتها الحية عبر جميع الفرق التشغيلية. اختر فريقاً لفتح صفحته التشغيلية الكاملة.',
+      dashTitle: 'متتبع العمليات', myStreamsSec: 'مساراتي', otherStreamsSec: 'المسارات الأخرى', dashSub: 'ملكية الفرق ومتابعة إجراءاتها الحية عبر جميع الفرق التشغيلية. اختر فريقاً لفتح صفحته التشغيلية الكاملة.',
+      backToTeam: 'العودة إلى الفريق', allTasksSub: 'قائمة المهام الكاملة لمسار العمل هذا.',
       ach: 'أبرز الإنجازات', blk: 'المعوّق الحالي', nxt: 'الإجراء التالي',
       teamsTitle: 'الفرق ومسارات العمل', teamsSub: 'الهيكل التشغيلي للمنتدى 2026 بقيادة رئيسة العمليات ومتابعة مديرة المشروع عبر جميع الفرق.',
       pmName: 'خولة السويدي', pmRole: 'مديرة المشروع التشغيلية · المتابعة عبر الفرق والتقارير التنفيذية', chiefName: 'فوزية الطاير المري', chiefRole: 'رئيسة العمليات',
@@ -463,9 +656,11 @@ class DashboardApp extends React.Component {
       dTitle: 'القرارات المعلّقة', dSub: 'قرارات مطلوبة من معالي الوزير والإدارة العليا مرتبة حسب الموعد النهائي.', awaiting: '6 بانتظار القرار',
       background: 'الخلفية', options: 'الخيارات', recAction: 'الإجراء الموصى به', impDelay: 'أثر التأخير',
       sTitle: 'رفع تحديث مسار العمل', sSub: 'يرفع قادة الفرق تحديثاتهم الأسبوعية هنا، وتصل إلى مديرة المشروع التشغيلية وتُدمج في اللوحة التنفيذية.',
-      fWs: 'مسار العمل', fLead: 'اسم قائد الفريق', fProg: 'نسبة الإنجاز ٪', fStatus: 'الحالة', fAch: 'الإنجازات منذ آخر تحديث', fBlk: 'المعوقات الحالية', fRisks: 'المخاطر', fBudget: 'مستجدات الميزانية', fAppr: 'الموافقات المعلّقة', fNext: 'الخطوات التالية', fSupport: 'الدعم المطلوب من الإدارة', fNotes: 'المرفقات / الملاحظات', fDate: 'تاريخ التحديث',
+      fWs: 'مسار العمل', fLead: 'اسم قائد الفريق', fProg: 'نسبة الإنجاز ٪', fStatus: 'الحالة', fAch: 'الإنجازات منذ آخر تحديث', fBlk: 'المعوقات الحالية', fRisks: 'التحديات', fBudget: 'الموافقات المعلّقة', fAppr: 'الخطوات التالية', fNext: 'الخطوات التالية', fSupport: 'الدعم المطلوب من الإدارة', fNotes: 'المرفقات / الملاحظات', fDate: 'تاريخ التحديث',
       phLead: 'مثال: شيماء خماس', phAch: 'البنود المنجزة والعقود الموقعة والموافقات المؤكدة…', phNotes: 'رابط أو مرجع للوثائق الداعمة',
       submitNote: 'تُراجع خولة السويدي التحديثات قبل نشرها للقيادة.', submitBtn: 'رفع التحديث',
+      addTasksL: 'إضافة مهام / بنود عمل', addTasksSub: 'أضف بنود عمل جديدة لهذا الفريق، وستظهر في جدول المتتبع التشغيلي.', addTaskBtn: 'إضافة مهمة', taskNL: 'مهمة', taskPh: 'صف الإجراء أو المهمة',
+      guideTitle: 'إنشاء دليل الفريق', guideSub: 'اختر ما تريد تضمينه في التقرير.', guideLeaders: 'قادة الفرق ونوابهم فقط', guideMembers: 'جميع الأعضاء', guideUpdates: 'التحديثات وبنود العمل',
       repTitle: 'التقارير', repSub: 'ملخصات تنفيذية أسبوعية وتقارير مسارات عمل قابلة للتصفية.', exportPdf: 'تصدير PDF', download: 'تنزيل التقرير', printView: 'نسخة الطباعة',
       weekSum: 'الملخص التنفيذي الأسبوعي', weekLabel: 'الأسبوع 27 · 29 يونيو – 2 يوليو 2026', issued: 'أُرسل لمعالي الوزير',
       progWeek: 'تقدم هذا الأسبوع', progWeekTxt: 'اكتمال موافقات الضيافة الإماراتية (تأكيد شوكولاتة دبي)؛ اختيار العروض الثقافية — الأهلة للافتتاح والعيالة للاستقبال؛ بدء الفحوصات الأمنية؛ وجدولة تذوق الطعام في مدينة جميرا.',
@@ -503,15 +698,21 @@ class DashboardApp extends React.Component {
   photoObj(id, initText, baseStyle) {
     const p = (this.state.photos || {})[id];
     const style = p ? 'background-image:url(' + p + ');color:transparent;' + (baseStyle || '') : (baseStyle || '');
-    return { style, init: p ? '' : initText, cls: this.state.admin ? 'av-edit' : '', pick: this.pickPhoto(id) };
+    const imgEl = p ? React.createElement('img', { className: 'avimg', src: p, alt: '' }) : null;
+    return { style, init: p ? '' : initText, cls: this.state.admin ? 'av-edit' : '', pick: this.pickPhoto(id), url: p || '', hasPhoto: !!p, imgEl };
   }
 
   EVENTS = [
-    { id: 'wef', en: 'Annual Meeting of Global Future Leaders 2026', ar: 'المنتدى الاقتصادي العالمي', logo: '/assets/logo-wef.png', status: 'active', period: ['13–15 Oct 2026 · Dubai', '13–15 أكتوبر 2026 · دبي'] },
-    { id: 'agm', en: 'Annual Government Meetings of UAE', ar: 'الاجتماعات السنوية لحكومة دولة الإمارات', logo: '/assets/logo-agm-black.png', status: 'active', period: ['9–10 Nov 2026 · Abu Dhabi', '9–10 نوفمبر 2026 · أبوظبي'] },
-    { id: 'mbr', en: 'MBR Government Excellence Award', ar: 'جائزة محمد بن راشد للأداء الحكومي المتميز', logo: '/assets/logo-mbrgea-nobg.png', status: 'blank', period: ['5 Dec 2026 · Dubai', '5 ديسمبر 2026 · دبي'] }
+    { id: 'wef', en: 'Annual Meeting of Global Future Leaders 2026', ar: 'المنتدى الاقتصادي العالمي', logo: 'assets/logo-wef.png', status: 'active', period: ['13–15 Oct 2026 · Dubai', '13–15 أكتوبر 2026 · دبي'] },
+    { id: 'agm', en: 'Annual Government Meetings of UAE', ar: 'الاجتماعات السنوية لحكومة دولة الإمارات', logo: 'assets/logo-agm-black.png', status: 'active', period: ['9–10 Nov 2026 · Abu Dhabi', '9–10 نوفمبر 2026 · أبوظبي'] },
+    { id: 'mbr', en: 'MBR Government Excellence Award', ar: 'جائزة محمد بن راشد للأداء الحكومي المتميز', logo: 'assets/logo-mbrgea-nobg.png', status: 'blank', period: ['5 Nov 2026 · Dubai', '5 ديسمبر 2026 · دبي'] }
   ];
-  allEvents() { return [...this.EVENTS, ...(this.state.customEvents || [])]; }
+  allEvents() {
+    const edits = this.state.eventEdits || {}; const del = this.state.eventDeleted || [];
+    return [...this.EVENTS, ...(this.state.customEvents || [])]
+      .filter(ev => !del.includes(ev.id))
+      .map(ev => { const e2 = edits[ev.id]; return e2 ? { ...ev, en: e2.en ?? ev.en, ar: e2.ar ?? ev.ar, period: e2.period ?? ev.period, logo: e2.logo !== undefined ? e2.logo : ev.logo, owner: e2.owner ?? ev.owner } : ev; });
+  }
   SEED_TEAMS = { agm: [
     { id: 'agm-1', n: ['Integrated Experience', 'التجربة المتكاملة'], leadN: ['Khawla Al Suwaidi', 'خولة السويدي'], depN: ['Fawzia Al Tayer', 'فوزية الطاير'], s: 'a', p: 45, due: ['TBC', 'يُحدد'], u: ['07 Jul', '07 يوليو'] },
     { id: 'agm-2', n: ['Admin Affairs, Protocol & Events', 'الشؤون الإدارية والمراسم والفعاليات'], leadN: ['Shaima Khammas', 'شيماء خماس'], depN: ['Sumaya Al Hakim', 'سمية الحكيم'], s: 'a', p: 55, due: ['20 Oct', '20 أكتوبر'], u: ['07 Jul', '07 يوليو'] },
@@ -528,9 +729,35 @@ class DashboardApp extends React.Component {
     { id: 'agm-13', n: ['Digital Services & Cyber Security', 'الخدمات الرقمية والأمن السيبراني'], leadN: ['Mohammed Al Yassi', 'محمد الياسي'], depN: ['Abdulrahman Al Balushi', 'عبدالرحمن البلوشي'], s: 'a', p: 35, due: ['TBC', 'يُحدد'], u: ['07 Jul', '07 يوليو'] }
   ] };
   getEvent(id) { return this.allEvents().find(e => e.id === id) || null; }
-  openEvent = (id) => () => { this.setState({ event: id, page: 'overview', teamView: null, actionKey: null, agendaKey: null, showAddEvent: false }); window.scrollTo(0, 0); };
-  backToEvents = () => { this.setState({ event: null, page: 'overview', teamView: null, actionKey: null, agendaKey: null, showAddEvent: false }); window.scrollTo(0, 0); };
+  openEvent = (id) => () => { const r = this.state.role || 'inputter'; this.setState({ event: id, page: (r === 'admin' || r === 'he') ? 'overview' : 'dash', teamView: null, actionKey: null, agendaKey: null, showAddEvent: false }); window.scrollTo(0, 0); };
+  backToEvents = () => { const st = this.state; if (st.taskFull) { this.setState({ taskFull: false }); } else if (st.teamView) { this.setState({ teamView: null, sel: {}, wfAdd: false, wfRemove: false, taskFull: false }); } else { this.setState({ event: null, page: 'overview', teamView: null, actionKey: null, agendaKey: null, showAddEvent: false }); } window.scrollTo(0, 0); };
+  resolveAsset(p) { try { if (p && window.__resources) { const metas = document.querySelectorAll('meta[name="ext-resource-dependency"]'); for (const m of metas) { if (m.getAttribute('content') === p) { const r = window.__resources[m.getAttribute('data-resource-id')]; if (r) return r; } } } } catch (e) {} return p; }
   openAddEvent = () => this.setState({ showAddEvent: true, newLogoName: null });
+  openEditEvent = (id) => (e) => { if (e && e.stopPropagation) e.stopPropagation(); this._editLogo = undefined; this.setState({ editEventId: id, editLogoName: null }); };
+  closeEditEvent = () => { this._editLogo = undefined; this.setState({ editEventId: null, editLogoName: null }); };
+  pickEditLogo = () => { const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*'; inp.onchange = (e) => { const file = e.target.files && e.target.files[0]; if (!file) return; const rd = new FileReader(); rd.onload = () => { this._editLogo = rd.result; this.setState({ editLogoName: file.name }); }; rd.readAsDataURL(file); }; inp.click(); };
+  saveEventEdit = (e) => {
+    e.preventDefault(); const id = this.state.editEventId; if (!id) return;
+    const f = new FormData(e.target); const en = (f.get('en') || '').trim(); if (!en) return;
+    const arName = (f.get('ar') || '').trim() || en; const period = (f.get('period') || '').trim(); const owner = (f.get('owner') || '').trim();
+    const cur = this.allEvents().find(x => x.id === id) || {};
+    const curP = cur.period || ['', ''];
+    const patch = { en, ar: arName, period: period === curP[0] ? curP : [period || 'To be confirmed', period || 'يُحدد لاحقاً'], owner };
+    if (this._editLogo !== undefined) patch.logo = this._editLogo;
+    const eventEdits = { ...(this.state.eventEdits || {}), [id]: { ...(this.state.eventEdits || {})[id], ...patch } };
+    this.persist('wef_event_edits', eventEdits); this._editLogo = undefined;
+    this.setState({ eventEdits, editEventId: null, editLogoName: null });
+  };
+  askDelEvent = (id) => (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.setState({ confirmDelEvent: id }); };
+  cancelDelEvent = () => this.setState({ confirmDelEvent: null });
+  doDelEvent = () => {
+    const id = this.state.confirmDelEvent; if (!id) return;
+    const eventDeleted = [...(this.state.eventDeleted || []), id];
+    this.persist('wef_event_deleted', eventDeleted);
+    const customEvents = (this.state.customEvents || []).filter(ev => ev.id !== id);
+    this.persist('wef_custom_events', customEvents);
+    this.setState({ eventDeleted, customEvents, confirmDelEvent: null, event: this.state.event === id ? null : this.state.event });
+  };
   closeAddEvent = () => { this._newLogo = null; this.setState({ showAddEvent: false, newLogoName: null }); };
   pickNewLogo = () => { const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*'; inp.onchange = (e) => { const file = e.target.files && e.target.files[0]; if (!file) return; const r = new FileReader(); r.onload = () => { this._newLogo = r.result; this.setState({ newLogoName: file.name }); }; r.readAsDataURL(file); }; inp.click(); };
   createEvent = (e) => {
@@ -579,8 +806,19 @@ class DashboardApp extends React.Component {
     }; inp.click();
   };
 
-  adminClick = () => { if (this.state.admin) this.setState({ admin: false }); else this.setState({ showLogin: true, loginErr: null }); };
-  doLogin = (e) => { e.preventDefault(); const pwd = new FormData(e.target).get('pwd'); if (pwd === '1234') this.setState({ admin: true, showLogin: false, loginErr: null }); else this.setState({ loginErr: this.T[this.state.lang].wrongPwd }); };
+  adminClick = () => { if (this.state.admin) this.setRole('inputter')(); else this.setState({ showLogin: true, loginErr: null }); };
+  doLogin = (e) => { e.preventDefault(); const pwd = new FormData(e.target).get('pwd'); if (pwd === '1234') { this.setRole('admin')(); this.setState({ showLogin: false, loginErr: null }); } else this.setState({ loginErr: this.T[this.state.lang].wrongPwd }); };
+  setRole = (r) => () => {
+    this.persist('wef_role', r);
+    const patch = { role: r, admin: r === 'admin' };
+    const canExec = r === 'admin' || r === 'he';
+    if (!canExec && (this.state.page === 'overview' || this.state.page === 'approvals')) patch.page = 'dash';
+    if (r === 'hotel') patch.page = 'hotel';
+    else if (this.state.page === 'hotel') patch.page = 'dash';
+    this.setState(patch);
+  };
+  setMyStream = (e) => { const v = e.target.value; const ev = this.state.event; if (!ev) return; const myStreams = { ...(this.state.myStreams || {}), [ev]: v }; this.persist('wef_mystream', myStreams); this.setState({ myStreams }); };
+  canEditTeam(teamId) { const r = this.state.role || 'inputter'; if (r === 'admin') return true; if (r === 'inputter') return (this.state.myStreams || {})[this.state.event] === teamId; if (r === 'lead') return this._leadStreams().indexOf(teamId) !== -1; return false; }
   openEdit = (i) => (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.setState({ editIdx: i, detailIdx: null }); };
   closeEdit = () => this.setState({ editIdx: null });
   openDetail = (i) => (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.setState({ detailIdx: i }); };
@@ -638,26 +876,158 @@ class DashboardApp extends React.Component {
     ['wef_edits', 'wef_photos', 'wef_order', 'wef_members', 'wef_deptedits', 'wef_deptmembers'].forEach(k => { try { localStorage.removeItem(k); } catch (e) {} });
     this.setState({ edits: {}, photos: {}, order: null, members: this.seedMembers(), deptEdits: {}, deptMembers: this.seedDeptMembers() });
   };
+  STREAM_LEADS = [
+    { id: 'ali', n: 'Ali Essa', streams: ['d1', 'd6', 'agm-1', 'agm-2', 'agm-5'] },
+    { id: 'shaima', n: 'Shaima Khammas', streams: ['d2', 'd8', 'agm-3', 'agm-4', 'agm-11'] },
+    { id: 'shamlan', n: 'Shamlan Al Ameri', streams: ['d4', 'd12', 'agm-10', 'agm-12', 'agm-13'] },
+    { id: 'khawla', n: 'Khawla Belqaizi', streams: ['d7', 'd9', 'd11', 'agm-6', 'agm-8'] },
+    { id: 'obada', n: 'Obada Shorrab', streams: ['d5', 'd10', 'agm-7', 'agm-9'] }
+  ];
+  _leadStreams() { const L = this.STREAM_LEADS.find(x => x.id === (this.state.leadId || 'ali')); return L ? L.streams : []; }
+  setLead = (e) => { const v = e.target.value; this.persist('wef_lead', v); this.setState({ leadId: v }); };
+  seedUsers = () => [
+    { id: 'u1', n: 'Local Admin', email: 'admin@moca.gov.ae', role: 'admin', stream: '', pass: '', last: null },
+    { id: 'u2', n: 'Khawla Alsuwaidi', email: 'khawla.alsuwaidi@moca.gov.ae', role: 'admin', stream: '', pass: '', last: null },
+    { id: 'u3', n: 'Ali Essa', email: 'ali.essa@moca.gov.ae', role: 'lead', stream: '', pass: '', last: null },
+    { id: 'u4', n: 'Shaima Khammas', email: 'shaima.khammas@moca.gov.ae', role: 'lead', stream: '', pass: '', last: null },
+    { id: 'u5', n: 'Suhail AlHarthi', email: 'suhail.alharthi@moca.gov.ae', role: 'inputter', stream: '', pass: '', last: null },
+    { id: 'u6', n: 'Team Account', email: 'team@moca.gov.ae', role: 'inputter', stream: '', pass: '', last: null },
+    { id: 'u7', n: 'Stream Lead Account', email: 'lead@moca.gov.ae', role: 'lead', stream: '', pass: '', last: null },
+    { id: 'u8', n: 'Hotel Desk', email: 'hotel@moca.gov.ae', role: 'hotel', stream: '', pass: '', last: null },
+    { id: 'u9', n: 'H.E. Office', email: 'he@moca.gov.ae', role: 'he', stream: '', pass: '', last: null }
+  ];
+  mgmtUpdateUser = (id, patch) => { const users = (this.state.users || []).map(u => u.id === id ? { ...u, ...patch } : u); this.persist('wef_users', users); this.setState({ users }); };
+  mgmtSetRole = (id) => (e) => { const v = e.target.value; this.mgmtUpdateUser(id, { role: v, ...(v === 'lead' || v === 'inputter' ? {} : { stream: '' }) }); };
+  mgmtSetStream = (id) => (e) => { this.mgmtUpdateUser(id, { stream: e.target.value }); };
+  mgmtTypePass = (id) => (e) => { this.mgmtUpdateUser(id, { pass: e.target.value }); };
+  mgmtGenPass = (id) => () => { const p = Math.random().toString(36).slice(2, 8) + '!' + Math.floor(Math.random() * 90 + 10); this.mgmtUpdateUser(id, { pass: p }); };
   seedDeptMembers = () => { const out = {}; [...this.DEPTS, ...this.AGM_DEPTS].forEach(d => { out[d.id] = d.mem.map(m => ({ id: m.id, n: m.n, r: m.r })); }); return out; };
-  openTeam = (id) => (e) => { if (e && e.target && e.target.closest && e.target.closest('button,select,input,textarea,form,.leadav')) return; this.setState({ teamView: id, page: 'dash', sel: {} }); window.scrollTo(0, 0); };
-  closeTeam = () => { this.setState({ teamView: null, sel: {} }); window.scrollTo(0, 0); };
-  toggleSel = (key) => (e) => { if (e && e.stopPropagation) e.stopPropagation(); const sel = { ...(this.state.sel || {}) }; if (sel[key]) delete sel[key]; else sel[key] = true; this.setState({ sel }); };
+  openTeam = (id) => (e) => { if (e && e.target && e.target.closest && e.target.closest('button,select,input,textarea,form,.leadav')) return; this.setState({ teamView: id, page: 'dash', sel: {}, taskFull: false }); window.scrollTo(0, 0); };
+  closeTeam = () => { this.setState({ teamView: null, sel: {}, wfAdd: false, wfRemove: false, taskFull: false }); window.scrollTo(0, 0); };
+  openTaskFull = (id) => () => { this.setState({ taskFull: true }); window.scrollTo(0, 0); };
+  closeTaskFull = () => { this.setState({ taskFull: false }); window.scrollTo(0, 0); };
   openAction = (id, i) => () => this.setState({ actionKey: id + ':' + i });
   closeAction = () => this.setState({ actionKey: null });
+  openTaskEdit = (teamId, idx) => (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.setState({ taskEdit: { teamId, idx } }); };
+  openTaskAdd = (teamId) => () => this.setState({ taskEdit: { teamId, idx: null } });
+  closeTaskEdit = () => this.setState({ taskEdit: null });
+  askDeleteTask = () => this.setState(s => ({ taskEdit: s.taskEdit ? { ...s.taskEdit, confirmDel: true } : null }));
+  cancelDeleteTask = () => this.setState(s => ({ taskEdit: s.taskEdit ? { ...s.taskEdit, confirmDel: false } : null }));
+  confirmDeleteTask = () => {
+    const te = this.state.taskEdit; if (!te || te.idx == null) return;
+    const taskDel = { ...(this.state.taskDel || {}) };
+    taskDel[te.teamId] = [...(taskDel[te.teamId] || []), te.idx];
+    this.persist('wef_taskdel', taskDel);
+    this.setState({ taskDel, taskEdit: null });
+    this.flashToast(this.state.lang === 'ar' ? 'تم حذف المهمة' : 'Task deleted');
+  };
+  saveTaskEdit = (e) => {
+    e.preventDefault();
+    const te = this.state.taskEdit; if (!te) return;
+    const f = new FormData(e.target); const g = k => (f.get(k) || '').trim();
+    const tt = g('t'); if (!tt) return;
+    const dRaw = g('d');
+    const dDisp = (() => { if (!dRaw) return '—'; const p = dRaw.split('-'); if (p.length !== 3) return dRaw; const mo = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][Number(p[1]) - 1] || ''; return Number(p[2]) + ' ' + mo + ' ' + p[0]; })();
+    const vals = { t: [tt, tt], o: g('o') || '—', s: f.get('s') || 'g', pr: f.get('pr') || 'm', ap: f.get('ap') || 'nr', mt: f.get('hasMt') ? { rec: g('mtRec'), pur: g('mtPur'), loc: g('mtLoc'), d: g('mtDate'), tm: g('mtTime') } : null, d: dDisp, nx: [g('nx') || '—', g('nx') || '—'] };
+    if (te.idx == null) {
+      const tasks = { ...(this.state.tasks || {}) };
+      tasks[te.teamId] = [...(tasks[te.teamId] || []), { ...vals, dep: ['—', '—'] }];
+      this.persist('wef_tasks', tasks);
+      this.setState({ tasks, taskEdit: null });
+    } else {
+      const taskOv = { ...(this.state.taskOv || {}) };
+      taskOv[te.teamId] = { ...(taskOv[te.teamId] || {}), [te.idx]: vals };
+      this.persist('wef_taskov', taskOv);
+      this.setState({ taskOv, taskEdit: null });
+    }
+  };
   openBlock = (di, bi) => () => this.setState({ agendaKey: di + ':' + bi });
   closeAgenda = () => this.setState({ agendaKey: null });
-  openShareTeam = (id) => (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.setState({ shareKey: 'team:' + id, shareComment: '' }); };
-  openShareAction = (id, i) => (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.setState({ shareKey: 'action:' + id + ':' + i, shareComment: '' }); };
-  closeShare = () => this.setState({ shareKey: null });
-  openComment = (id) => (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.setState({ commentKey: id, commentText: '' }); };
-  closeComment = () => this.setState({ commentKey: null });
-  setCommentText = (e) => this.setState({ commentText: e.target.value });
-  setShareComment = (e) => this.setState({ shareComment: e.target.value });
-  copyShareMsg = (msg) => () => {
-    const done = () => this.flashToast(this.state.lang === 'ar' ? 'تم نسخ الرسالة' : 'Message copied');
-    try { navigator.clipboard.writeText(msg).then(done, done); }
-    catch (e) { const ta = document.createElement('textarea'); ta.value = msg; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); } catch (e2) {} ta.remove(); done(); }
+  toggleTlMode = () => this.setState({ tlMode: !this.state.tlMode, tlKey: null, tlDayKey: null });
+  openTlBlock = (di, bi) => (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.setState({ tlKey: di + ':' + bi, tlDayKey: null }); };
+  openTlDay = (di) => (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.setState({ tlDayKey: String(di), tlKey: null }); };
+  closeTl = () => this.setState({ tlKey: null, tlDayKey: null });
+  _tlStore() { const ev = this.state.event || 'wef'; const cur = (this.state.tlEdits || {})[ev] || {}; return { blocks: { ...(cur.blocks || {}) }, days: { ...(cur.days || {}) } }; }
+  _saveTl(store) { const ev = this.state.event || 'wef'; const all = { ...(this.state.tlEdits || {}), [ev]: store }; this.persist('wef_tledits', all); this.setState({ tlEdits: all }); }
+  saveTlBlock = (e) => { e.preventDefault(); const f = new FormData(e.target); const key = this.state.tlKey; const store = this._tlStore(); store.blocks[key] = { time: f.get('time') || '', t: f.get('t') || '', sub: f.get('sub') || '', loc: f.get('loc') || '', team: f.get('team') || '', notes: f.get('notes') || '' }; this._saveTl(store); this.setState({ tlKey: null }); this.flashToast(this.state.lang === 'ar' ? 'تم حفظ الجدول' : 'Timeline updated'); };
+  saveTlDay = (e) => { e.preventDefault(); const f = new FormData(e.target); const di = this.state.tlDayKey; const store = this._tlStore(); store.days[di] = { date: f.get('date') || '', day: f.get('day') || '', tagline: f.get('tagline') || '' }; this._saveTl(store); this.setState({ tlDayKey: null }); this.flashToast(this.state.lang === 'ar' ? 'تم حفظ الجدول' : 'Timeline updated'); };
+  openTeamPdf = (id) => (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.setState({ pdfKey: id }); };
+  closePdf = () => this.setState({ pdfKey: null });
+  downloadTeamPdf = (d) => () => {
+    const w = window.open('', '_blank');
+    if (!w) { this.flashToast(d.ar ? 'يرجى السماح بالنوافذ المنبثقة لتنزيل ملف PDF.' : 'Please allow pop-ups to download the PDF.'); return; }
+    w.document.open(); w.document.write(d.html); w.document.close();
+    const go = () => { try { w.focus(); w.print(); } catch (e) {} };
+    if (w.document.readyState === 'complete') setTimeout(go, 400); else w.onload = () => setTimeout(go, 400);
   };
+  shareTeamPdfNative = (d) => async () => {
+    try {
+      if (navigator.share) { await navigator.share({ title: d.shareTitle, text: d.shareText + '\n\n' + d.link }); }
+      else { this.flashToast(d.ar ? 'المشاركة المباشرة غير مدعومة — استخدم تنزيل PDF.' : 'Direct share is not supported here — use Download PDF instead.'); }
+    } catch (e) {}
+  };
+  teamPdfHtml(d) {
+    const ar = d.ar;
+    const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    const SC = { g: '#1F8A5B', a: '#B9821C', r: '#C0392B' };
+    const SB = { g: '#E7F3EC', a: '#FAF1DE', r: '#F7E7E4' };
+    const col = SC[d.s] || '#1B66C9', colb = SB[d.s] || '#EAF1FB';
+    const L = d.L;
+    const initOf = n => String(n || '').trim().split(/\s+/).slice(0, 2).map(w => w.charAt(0)).join('').toUpperCase();
+    const SC2 = { n: '#5A6A83', p: '#2C64A8', a: '#B9821C', g: '#1F8A5B' };
+    const SB2 = { n: '#EEF1F6', p: '#E7EEF8', a: '#FAF1DE', g: '#E7F3EC' };
+    const APC = { req: '#B9821C', nr: '#5A6A83', pend: '#2C64A8' };
+    const APB = { req: '#FAF1DE', nr: '#EEF1F6', pend: '#E7EEF8' };
+    const wfCards = (d.wf || []).map(p => '<div class="wfp"><div class="wfav">' + esc(initOf(p.n)) + '</div><div class="wfn">' + esc(p.n) + '</div><div class="wfr">' + esc(p.role) + '</div></div>').join('');
+    const actRows = (d.actions || []).length ? (d.actions || []).map(a => '<tr><td class="a-t">' + esc(a.t) + '</td><td>' + esc(a.o) + '</td><td><span class="tag" style="color:' + (SC2[a.sk] || col) + ';background:' + (SB2[a.sk] || colb) + '">' + esc(a.sl) + '</span></td><td><span class="tag" style="color:' + (APC[a.apK] || '#5A6A83') + ';background:' + (APB[a.apK] || '#EEF1F6') + '">' + esc(a.apL) + '</span></td><td>' + esc(a.d) + '</td><td>' + esc(a.nx) + '</td><td>' + esc(a.ch) + '</td></tr>').join('') : '<tr><td colspan="7" class="muted" style="text-align:center;padding:14px">—</td></tr>';
+    const css = '@page{size:A4;margin:14mm 13mm}*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}body{margin:0;font-family:"Helvetica Neue",Helvetica,Arial,"Segoe UI",sans-serif;color:#16233A;font-size:11px;line-height:1.5}'
+      + '.wrap{max-width:760px;margin:0 auto;padding:6px 2px}'
+      + '.top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;border-bottom:2px solid ' + '#1B66C9' + ';padding-bottom:14px}'
+      + '.brand{display:flex;gap:12px;align-items:center}'
+      + '.logo{width:44px;height:44px;border-radius:10px;background:#0F2440;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:17px;overflow:hidden;flex:none}'
+      + '.logo img{width:100%;height:100%;object-fit:cover}'
+      + '.ev{font-size:15px;font-weight:700;color:#0F2440;letter-spacing:-.01em}'
+      + '.evsub{font-size:10px;color:#5A6A83;margin-top:3px;text-transform:uppercase;letter-spacing:.08em;font-weight:600}'
+      + '.gen{font-size:9.5px;color:#5A6A83;text-align:' + (ar ? 'left' : 'right') + ';white-space:nowrap}'
+      + '.gen b{display:block;color:#16233A;font-size:10.5px;margin-top:2px}'
+      + '.hero{margin-top:18px;display:flex;justify-content:space-between;align-items:flex-end;gap:18px}'
+      + '.tname{font-size:23px;font-weight:700;color:#0F2440;letter-spacing:-.02em;line-height:1.15}'
+      + '.hmeta{display:flex;gap:8px;align-items:center;margin-top:9px;flex-wrap:wrap}'
+      + '.pill{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:700;padding:4px 11px;border-radius:999px;color:' + col + ';background:' + colb + '}'
+      + '.pill .d{width:6px;height:6px;border-radius:50%;background:' + col + '}'
+      + '.hstat{display:flex;gap:26px;text-align:' + (ar ? 'right' : 'left') + '}'
+      + '.hk{font-size:9px;color:#5A6A83;text-transform:uppercase;letter-spacing:.07em;font-weight:600}'
+      + '.hv{font-size:19px;font-weight:700;color:#0F2440;margin-top:3px;line-height:1}'
+      + '.sec{margin-top:20px;break-inside:avoid}'
+      + '.sh{font-size:11px;font-weight:700;color:#1B66C9;text-transform:uppercase;letter-spacing:.08em;padding-bottom:7px;border-bottom:1px solid #E2E8F2;margin-bottom:11px}'
+      + '.cols{display:flex;gap:24px}.cols>div{flex:1;min-width:0}'
+      + '.lead{display:flex;gap:10px;align-items:center;padding:9px 12px;border:1px solid #E2E8F2;border-radius:10px;background:#F8FAFD}'
+      + '.lav{width:34px;height:34px;border-radius:8px;background:#EAF1FB;color:#1B66C9;font-weight:700;font-size:12px;display:flex;align-items:center;justify-content:center;flex:none}'
+      + '.ln{font-size:12px;font-weight:700;color:#0F2440}.lr{font-size:9.5px;color:#5A6A83;text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin-top:2px}'
+      + '.bul{display:flex;gap:8px;align-items:flex-start;padding:3px 0;font-size:10.5px}'
+      + '.bul .bd{width:5px;height:5px;border-radius:50%;flex:none;margin-top:6px}'
+      + '.muted{color:#8494AC;font-size:10.5px}'
+      + 'table{width:100%;border-collapse:collapse}'
+      + '.wfgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:16px 12px}'
+      + '.wfp{text-align:center}'
+      + '.wfav{width:46px;height:46px;border-radius:50%;background:#EAF1FB;color:#1B66C9;border:2px solid #1B66C9;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;margin:0 auto 7px}'
+      + '.wfn{font-size:10.5px;font-weight:700;color:#0F2440;line-height:1.3}'
+      + '.wfr{font-size:9px;color:#5A6A83;margin-top:2px;line-height:1.3}'
+      + '.at{margin-top:6px}.at th{font-size:8.5px;text-transform:uppercase;letter-spacing:.05em;color:#5A6A83;text-align:' + (ar ? 'right' : 'left') + ';padding:0 8px 7px;border-bottom:1px solid #E2E8F2;font-weight:700}'
+      + '.at td{padding:8px;border-bottom:1px solid #EDF1F7;font-size:9.5px;vertical-align:top}.at .a-t{font-weight:600;color:#0F2440}'
+      + '.tag{display:inline-block;font-size:8.5px;font-weight:700;padding:2px 8px;border-radius:99px;white-space:nowrap}'
+      + '.foot{margin-top:26px;padding-top:16px;border-top:1px solid #E2E8F2;display:flex;justify-content:center}'
+      + '.openbtn{display:inline-block;background:#1B66C9;color:#fff;font-size:11px;font-weight:700;padding:11px 26px;border-radius:10px;text-decoration:none;letter-spacing:.02em}';
+    const html = '<!DOCTYPE html><html dir="' + (ar ? 'rtl' : 'ltr') + '" lang="' + (ar ? 'ar' : 'en') + '"><head><meta charset="utf-8"><title>' + esc(d.fname.replace(/\.pdf$/, '')) + '</title><style>' + css + '</style></head><body><div class="wrap">'
+      + '<div class="top"><div class="brand"><div class="logo">' + (d.logo ? '<img src="' + esc(d.logo) + '" alt="">' : esc(d.evInit)) + '</div><div><div class="ev">' + esc(d.eventName) + '</div><div class="evsub">' + esc(L.secv) + (d.period ? ' · ' + esc(d.period) : '') + '</div></div></div><div class="gen">' + esc(L.generated) + '<b>' + esc(d.genAt) + '</b></div></div>'
+      + '<div class="hero"><div><div class="tname">' + esc(d.n) + '</div><div class="hmeta"><span class="pill"><span class="d"></span>' + esc(d.sl) + '</span><span class="muted">' + esc(L.upd) + ': ' + esc(d.u) + '</span>' + (d.delay ? '<span class="pill" style="color:#C0392B;background:#F7E7E4"><span class="d" style="background:#C0392B"></span>' + esc(L.delayFlag) + '</span>' : '') + '</div></div>'
+      + '<div class="hstat"><div><div class="hk">' + esc(L.prog) + '</div><div class="hv">' + d.p + '%</div></div><div><div class="hk">' + esc(L.due) + '</div><div class="hv">' + esc(d.due) + '</div></div></div></div>'
+      + '<div class="sec"><div class="sh">' + esc(L.workforce) + '</div><div class="wfgrid">' + wfCards + '</div></div>'
+      + '<div class="sec"><div class="sh">' + esc(L.opTracker) + '</div><table class="at"><thead><tr><th>' + esc(L.action) + '</th><th>' + esc(L.owner) + '</th><th>' + esc(L.status) + '</th><th>' + esc(L.approval) + '</th><th>' + esc(L.due) + '</th><th>' + esc(L.nextSteps) + '</th><th>' + esc(L.challenges) + '</th></tr></thead><tbody>' + actRows + '</tbody></table></div>'
+      + '<div class="foot"><a class="openbtn" href="' + esc(d.link) + '">' + esc(L.openTracker) + '</a></div>'
+      + '</div></body></html>';
+    return html;
+  }
   buildCalDownload(title, dateEn, timeStr, loc, notes) {
     return () => {
       const M = { Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5, Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11 };
@@ -683,11 +1053,46 @@ class DashboardApp extends React.Component {
       culture: ['M9 10.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6', 'M3.5 20a5.5 5.5 0 0 1 11 0', 'M16.5 11a2.5 2.5 0 1 0 0-5', 'M15.5 14.2A4.5 4.5 0 0 1 21 20'],
       dining: ['M6 3v18', 'M4 3v5a2 2 0 0 0 4 0V3', 'M18 3c-1.6 0-2.6 2-2.6 5s1 4 2.6 4v9'],
       ceremony: ['M12 3.5l2.6 5.3 5.8.9-4.2 4.1 1 5.8L12 22l-5.2 2.6 1-5.8L3.6 9.7l5.8-.9z'],
+      doc: ['M6 3h9l4 4v14H6z', 'M15 3v4h4', 'M9 11h6', 'M9 15h6'],
+      passport: ['M5 3h14v18H5z', 'M12 12a3 3 0 1 0 0-6 3 3 0 0 0 0 6', 'M9 16h6'],
+      bed: ['M3 6v12', 'M3 14h18v4', 'M21 14v-3a2 2 0 0 0-2-2H9v5', 'M6 10.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3'],
+      car: ['M5 16v3.5h2.5V18h9v1.5H19V16', 'M5 16l1.4-5a2 2 0 0 1 1.9-1.5h7.4a2 2 0 0 1 1.9 1.5L19 16z', 'M8 13h.01', 'M16 13h.01'],
+      palette: ['M12 3a9 9 0 1 0 0 18c1.2 0 2-.9 2-2 0-.6-.3-1-.3-1.6 0-1.2 1-2.3 2.3-2.4H18a3 3 0 0 0 3-3c0-5-4-9-9-9', 'M7.5 10.5h.01', 'M12 7.5h.01', 'M16.5 10.5h.01'],
+      music: ['M9 18a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7', 'M12.5 14.5L19 5', 'M19 5l1.7 1.7'],
       dot: ['M12 12h.01']
     };
     const paths = P[type] || P.dot;
     return React.createElement('svg', { viewBox: '0 0 24 24', width: 18, height: 18, fill: 'none', stroke: 'currentColor', strokeWidth: 1.7, strokeLinecap: 'round', strokeLinejoin: 'round' }, paths.map((d, i) => React.createElement('path', { key: i, d })));
   };
+
+  OPS_UPDATES = [
+    { ic: 'doc', n: ['MOU', 'مذكرة التفاهم'], items: [
+      ['Operational documents: pending with WEF.', 'الوثائق التشغيلية: معلّقة لدى المنتدى.'],
+      ['MOU document: pending with WEF.', 'وثيقة مذكرة التفاهم: معلّقة لدى المنتدى.'] ] },
+    { ic: 'passport', n: ['Visa', 'التأشيرات'], items: [
+      ['Visa issuance will begin in mid-September.', 'يبدأ إصدار التأشيرات منتصف سبتمبر.'] ] },
+    { ic: 'plane', n: ['Flights', 'الطيران'], items: [
+      ['Emirates to confirm the 25% discount; contract has been signed.', 'طيران الإمارات ستؤكد خصم 25٪، وقد تم توقيع العقد.'] ] },
+    { ic: 'bed', n: ['Accommodation', 'الإقامة'], items: [
+      ['Accommodation for all guests is confirmed.', 'تم تأكيد الإقامة لجميع الضيوف.'],
+      ['Contracts are confirmed.', 'تم تأكيد العقود.'] ] },
+    { ic: 'dining', n: ['Gala Dinner & Farewell Reception', 'العشاء الرسمي وحفل الوداع'], items: [
+      ['Venue selection and food tasting arrangements for the gala dinner are underway.', 'جارٍ اختيار المكان وترتيبات تذوق الطعام للعشاء الرسمي.'],
+      ['Emirati food experience proposal will be provided by Wednesday.', 'سيُقدَّم مقترح تجربة الطعام الإماراتي يوم الأربعاء.'],
+      ['Giveaways, reception dinner and closing dinner proposals under process.', 'مقترحات الهدايا وعشاء الاستقبال والعشاء الختامي قيد الإجراء.'] ] },
+    { ic: 'music', n: ['Emirati Cultural Performance', 'العرض الثقافي الإماراتي'], items: [
+      ['Studying the options; to be shared by Tuesday.', 'تجري دراسة الخيارات وستُشارَك يوم الثلاثاء.'] ] },
+    { ic: 'palette', n: ['Opening Ceremony', 'حفل الافتتاح'], items: [
+      ['Studying the options; to be shared by Thursday.', 'تجري دراسة الخيارات وستُشارَك يوم الخميس.'] ] },
+    { ic: 'car', n: ['Transportation', 'النقل'], items: [
+      ['Airport–hotel transportation will be through Marhaba. Airport transportation done; contract under process.', 'النقل من المطار إلى الفندق عبر «مرحبا». نقل المطار منجز والعقد قيد الإجراء.'],
+      ['Transportation for cultural activities and the gala dinner is currently under tender.', 'نقل الفعاليات الثقافية والعشاء الرسمي قيد المناقصة حالياً.'],
+      ['Waiting for WEF to share the transportation plan after confirming the venue.', 'بانتظار مشاركة المنتدى خطة النقل بعد تأكيد المكان.'] ] },
+    { ic: 'sessions', n: ['IT', 'تقنية المعلومات'], items: [
+      ['Planning stage of infrastructure.', 'مرحلة التخطيط للبنية التحتية.'] ] },
+    { ic: 'ceremony', n: ['Branding', 'الهوية والعلامة'], items: [
+      ['Updated branding kit. No major layout changes; updated layout to be shared.', 'تحديث حزمة الهوية. لا تغييرات كبيرة على التصميم وسيُشارَك التصميم المحدّث.'] ] }
+  ];
 
   DEPT_META = {
     d1: { p: 68, due: '11 Jul', delay: false, actions: [
@@ -867,6 +1272,183 @@ class DashboardApp extends React.Component {
     const deptMembers = { ...this.state.deptMembers, [id]: list };
     this.persist('wef_deptmembers', deptMembers); e.target.reset(); this.setState({ deptMembers });
   };
+  toggleWfAdd = () => this.setState(s => ({ wfAdd: !s.wfAdd, wfRemove: false }));
+  toggleWfRemove = () => this.setState(s => ({ wfRemove: !s.wfRemove, wfAdd: false }));
+  removeDeptMemberNow = (id, mid) => (e) => { if (e && e.stopPropagation) e.stopPropagation(); const list = (this.state.deptMembers[id] || []).filter(m => m.id !== mid); const deptMembers = { ...this.state.deptMembers, [id]: list }; this.persist('wef_deptmembers', deptMembers); this.setState({ deptMembers }); };
+  addDeptMemberInline = (id) => (e) => { e.preventDefault(); const fd = new FormData(e.target); const name = (fd.get('name') || '').trim(); if (!name) return; const role = (fd.get('role') || '').trim() || (this.state.lang === 'ar' ? '\u0639\u0636\u0648 \u0627\u0644\u0641\u0631\u064a\u0642' : 'Team Member'); const list = [...(this.state.deptMembers[id] || []), { id: 'dm' + Date.now(), n: name, r: role }]; const deptMembers = { ...this.state.deptMembers, [id]: list }; this.persist('wef_deptmembers', deptMembers); e.target.reset(); this.setState({ deptMembers }); };
+  _deptById = (id) => [...this.DEPTS, ...this.AGM_DEPTS].find(d => d.id === id);
+  openWfEdit = (deptId, kind, mid) => (e) => {
+    if (e && e.stopPropagation) e.stopPropagation();
+    if (!this.state.admin && !this.canEditTeam(deptId)) return;
+    const ar = this.state.lang === 'ar';
+    const tx = v => Array.isArray(v) ? v[ar ? 1 : 0] : v;
+    const photos = this.state.photos || {};
+    let name = '', role = '', photoId = '', isNew = false, acc = false, accP = '';
+    if (kind === 'member' && !mid) {
+      isNew = true; photoId = 'dm' + Date.now();
+    } else if (kind === 'member') {
+      const m = (this.state.deptMembers[deptId] || []).find(x => x.id === mid) || {};
+      name = tx(m.n) || ''; role = tx(m.r) || ''; photoId = mid; acc = !!m.acc; accP = m.accP || '';
+    } else {
+      const base = this._deptById(deptId) || { lead: { n: '', t: '' }, dep: { n: '', t: '' } };
+      const e2 = (this.state.deptEdits || {})[deptId] || {};
+      if (kind === 'lead') { name = e2.leadN || base.lead.n; role = e2.leadT || tx(base.lead.t); photoId = 'DL' + deptId; }
+      else { name = e2.depN || base.dep.n; role = e2.depT || tx(base.dep.t); photoId = 'DD' + deptId; }
+    }
+    this.setState({ wfEdit: { deptId, kind, mid, isNew, name, role, photoId, acc, accP, photo: photos[photoId] || null } });
+  };
+  closeWfEdit = () => this.setState({ wfEdit: null });
+  pickEmpDir = () => {
+    const inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.csv,.xlsx,.xls';
+    inp.onchange = (e) => { const file = e.target.files && e.target.files[0]; if (!file) return; const ar = this.state.lang === 'ar';
+      if (/\.xlsx?$|\.xls$/i.test(file.name)) { this.flashToast(ar ? 'يرجى حفظ الملف بصيغة CSV من إكسل (ملف > حفظ باسم > CSV) ثم رفعه.' : 'Please save the sheet as CSV in Excel (File > Save As > CSV), then upload it.'); return; }
+      const r = new FileReader(); r.onload = () => { const list = this.parseEmpCSV(String(r.result || ''));
+        if (!list.length) { this.flashToast(ar ? 'لم يُعثر على موظفين في الملف.' : 'No employees found in the file.'); return; }
+        this.persist('wef_empdir', list); this.setState({ empDir: list });
+        this.flashToast((ar ? 'تم تحميل ' : 'Loaded ') + list.length + (ar ? ' موظفاً في الدليل' : ' employees into the directory')); };
+      r.readAsText(file); };
+    inp.click();
+  };
+  parseEmpCSV(text) {
+    const rows = [];
+    String(text).replace(/^\uFEFF/, '').split(/\r?\n/).forEach(line => { if (!line.trim()) return;
+      const cells = []; let cur = '', q = false;
+      for (let i = 0; i < line.length; i++) { const c = line[i];
+        if (q) { if (c === '"') { if (line[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += c; }
+        else if (c === '"') q = true; else if (c === ',') { cells.push(cur); cur = ''; } else cur += c; }
+      cells.push(cur); rows.push(cells.map(s => s.trim())); });
+    if (!rows.length) return [];
+    const h = rows[0].map(s => s.toLowerCase());
+    const fi = keys => h.findIndex(c => keys.some(k => c.includes(k)));
+    let ni = fi(['name', 'الاسم', 'اسم']), ei = fi(['email', 'mail', 'بريد']), pi = fi(['phone', 'mobile', 'هاتف', 'جوال', 'رقم']), gi = fi(['gender', 'sex', 'الجنس', 'جنس']), idi = fi(['id', 'رقم الموظف', 'الرقم الوظيفي']);
+    let body = rows.slice(1);
+    if (ni < 0) { ni = 0; if (ei < 0) ei = 1; if (pi < 0) pi = 2; body = rows; }
+    const gnorm = v => { const s = String(v || '').trim().toLowerCase(); if (!s) return ''; if (s.startsWith('m') || s.includes('ذكر')) return 'M'; if (s.startsWith('f') || s.includes('أنث') || s.includes('انث')) return 'F'; return ''; };
+    return body.map(rw => ({ eid: idi >= 0 ? (rw[idi] || '') : '', n: rw[ni] || '', em: ei >= 0 ? (rw[ei] || '') : '', ph: pi >= 0 ? (rw[pi] || '') : '', gd: gi >= 0 ? gnorm(rw[gi]) : '' })).filter(x => x.n);
+  }
+  clearEmpDir = () => { this.persist('wef_empdir', []); this.setState({ empDir: [] }); };
+  approveWfNom = (deptId, nid) => () => {
+    const nom = { ...(this.state.wfNom || {}) }; const list = nom[deptId] || [];
+    const item = list.find(x => x.id === nid); if (!item) return;
+    const photos = { ...(this.state.photos || {}) };
+    let deptMembers = this.state.deptMembers, deptEdits = this.state.deptEdits;
+    if (item.kind === 'lead' || item.kind === 'dep') {
+      deptEdits = { ...(deptEdits || {}) }; const cur = { ...(deptEdits[deptId] || {}) };
+      if (item.kind === 'lead') { cur.leadN = item.n; cur.leadT = item.r; } else { cur.depN = item.n; cur.depT = item.r; }
+      deptEdits[deptId] = cur; this.persist('wef_deptedits', deptEdits);
+      if (item.photo) { photos[(item.kind === 'lead' ? 'DL' : 'DD') + deptId] = item.photo; }
+    } else if (item.type === 'edit' && item.mid) {
+      deptMembers = { ...deptMembers, [deptId]: (deptMembers[deptId] || []).map(m => m.id === item.mid ? { ...m, n: item.n, r: item.r, em: item.em || m.em || '', ph: item.ph || m.ph || '', acc: !!item.acc, accP: item.accP || '' } : m) };
+      this.persist('wef_deptmembers', deptMembers);
+      if (item.photo) photos[item.mid] = item.photo;
+    } else {
+      const pid = 'dm' + Date.now();
+      deptMembers = { ...deptMembers, [deptId]: [...(deptMembers[deptId] || []), { id: pid, n: item.n, r: item.r, em: item.em || '', ph: item.ph || '', acc: !!item.acc, accP: item.accP || '' }] };
+      this.persist('wef_deptmembers', deptMembers);
+      if (item.photo) photos[pid] = item.photo;
+    }
+    nom[deptId] = list.filter(x => x.id !== nid);
+    this.persist('wef_photos', photos); this.persist('wef_wfnom', nom);
+    this.setState({ deptMembers, deptEdits, photos, wfNom: nom });
+    this.flashToast(this.state.lang === 'ar' ? 'تم اعتماد التعديل' : 'Change approved and applied');
+  };
+  setHotelField = (mid, key) => (e) => {
+    const v = e.target.value;
+    const ha = { ...(this.state.hotelAssign || {}) };
+    ha[mid] = { ...(ha[mid] || {}), [key]: v };
+    if (key === 'mate') { ha[mid].mateRejected = v === '' ? true : false; ha[mid].mateApproved = false; }
+    this.persist('wef_hotel', ha); this.setState({ hotelAssign: ha });
+  };
+  htExport = () => {
+    const ar = this.state.lang === 'ar';
+    const rows = this._htRows || [];
+    const esc = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+    const head = ar ? ['الاسم', 'الفريق', 'البريد الإلكتروني', 'الهاتف', 'الجنس', 'الفندق', 'رقم التأكيد', 'تسجيل الدخول', 'تسجيل الخروج', 'شريك السكن', 'الشريك المفضل'] : ['Name', 'Team', 'Email', 'Phone', 'Gender', 'Hotel', 'Confirmation No.', 'Check-in', 'Check-out', 'Roommate', 'Preferred Roommate'];
+    const body = rows.map(h => [h.n, h.team, h.em, h.ph, h.gender === 'M' ? (ar ? 'ذكر' : 'Male') : h.gender === 'F' ? (ar ? 'أنثى' : 'Female') : '', h.hotel, h.conf, h.cin ? h.cin.replace('T', ' ') : '', h.cout ? h.cout.replace('T', ' ') : '', h.mate, h.pref]);
+    const csv = '\uFEFF' + [head, ...body].map(r => r.map(esc).join(',')).join('\r\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+    a.download = 'accommodation-list.csv'; a.click(); URL.revokeObjectURL(a.href);
+  };
+  fbExport = () => {
+    const ar = this.state.lang === 'ar';
+    const items = ((this.state.feedback || {})[this.state.event] || []);
+    const esc = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+    const head = ar ? ['التاريخ', 'مقدم الملاحظات', 'الفريق المعني', 'الملاحظات'] : ['Date', 'Submitted By', 'About Team', 'Feedback'];
+    const rows = items.map(f => [new Date(f.ts).toLocaleDateString(ar ? 'ar-AE' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' }), f.by || '', f.team || '', f.text || '']);
+    const csv = '\uFEFF' + [head, ...rows].map(r => r.map(esc).join(',')).join('\r\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+    a.download = 'feedback-report.csv'; a.click(); URL.revokeObjectURL(a.href);
+  };
+  fbOpenNow = () => { const fb = { ...(this.state.fbOpen || {}) }; fb[this.state.event] = true; this.persist('wef_fbopen', fb); this.setState({ fbOpen: fb }); };
+  fbSubmit = (e) => {
+    e.preventDefault(); const f = new FormData(e.target); const text = (f.get('text') || '').trim(); if (!text) return;
+    const ar = this.state.lang === 'ar';
+    const author = (f.get('author') || '').trim();
+    const ownTeam = f.get('ownTeam') || '';
+    const by = author + (ownTeam ? ' — ' + ownTeam : '');
+    const all = { ...(this.state.feedback || {}) };
+    all[this.state.event] = [{ id: 'fb' + Date.now(), team: f.get('team') || '—', text, by, ts: Date.now() }, ...(all[this.state.event] || [])];
+    this.persist('wef_feedback', all); this.setState({ feedback: all }); e.target.reset();
+    this.flashToast(ar ? 'تم إرسال الملاحظات' : 'Feedback submitted');
+  };
+  rejectWfNom = (deptId, nid) => () => {
+    const nom = { ...(this.state.wfNom || {}) };
+    nom[deptId] = (nom[deptId] || []).filter(x => x.id !== nid);
+    this.persist('wef_wfnom', nom); this.setState({ wfNom: nom });
+    this.flashToast(this.state.lang === 'ar' ? 'تم رفض الترشيح' : 'Nomination rejected');
+  };
+  setWfField = (field) => (e) => { const v = e.target.value; this.setState(s => ({ wfEdit: { ...s.wfEdit, [field]: v } })); };
+  pickWfEditPhoto = () => {
+    const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*';
+    inp.onchange = (e) => { const file = e.target.files && e.target.files[0]; if (!file) return; const r = new FileReader(); r.onload = () => this.setState(s => ({ wfEdit: { ...s.wfEdit, photo: r.result } })); r.readAsDataURL(file); };
+    inp.click();
+  };
+  saveWfEdit = (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    const w = this.state.wfEdit; if (!w) return;
+    const name = (w.name || '').trim(); if (!name) return;
+    const ar = this.state.lang === 'ar';
+    const role = (w.role || '').trim() || (ar ? '\u0639\u0636\u0648 \u0627\u0644\u0641\u0631\u064a\u0642' : 'Team Member');
+    const photos = { ...(this.state.photos || {}) };
+    if (!this.state.admin) {
+      const nom = { ...(this.state.wfNom || {}) };
+      const type = (w.kind === 'member' && w.isNew) ? 'add' : 'edit';
+      nom[w.deptId] = [...(nom[w.deptId] || []), { id: 'nom' + Date.now(), type, kind: w.kind, mid: w.mid || null, n: name, r: role, em: w.em || '', ph: w.ph || '', acc: !!w.acc, accP: w.acc ? (w.accP || '') : '', photo: w.photo || null }];
+      this.persist('wef_wfnom', nom);
+      this.setState({ wfNom: nom, wfEdit: null });
+      this.flashToast(ar ? 'تم إرسال التعديل لاعتماد الإدارة' : 'Change sent for admin approval');
+      return;
+    }
+    if (w.kind === 'member') {
+      const cur = this.state.deptMembers[w.deptId] || [];
+      let list, pid;
+      if (w.isNew) { pid = w.photoId || ('dm' + Date.now()); list = [...cur, { id: pid, n: name, r: role, em: w.em || '', ph: w.ph || '', gd: w.gd || '', eid: w.eid || '', acc: !!w.acc, accP: w.acc ? (w.accP || '') : '' }]; }
+      else { pid = w.mid; list = cur.map(m => m.id === w.mid ? { ...m, n: name, r: role, em: w.em || m.em || '', ph: w.ph || m.ph || '', gd: w.gd || m.gd || '', eid: w.eid || m.eid || '', acc: !!w.acc, accP: w.acc ? (w.accP || '') : '' } : m); }
+      const deptMembers = { ...this.state.deptMembers, [w.deptId]: list };
+      this.persist('wef_deptmembers', deptMembers);
+      if (w.photo) photos[pid] = w.photo;
+      this.persist('wef_photos', photos);
+      this.setState({ deptMembers, photos, wfEdit: null });
+    } else {
+      const deptEdits = { ...(this.state.deptEdits || {}) };
+      const cur = { ...(deptEdits[w.deptId] || {}) };
+      if (w.kind === 'lead') { cur.leadN = name; cur.leadT = role; } else { cur.depN = name; cur.depT = role; }
+      deptEdits[w.deptId] = cur;
+      this.persist('wef_deptedits', deptEdits);
+      if (w.photo) photos[w.photoId] = w.photo;
+      this.persist('wef_photos', photos);
+      this.setState({ deptEdits, photos, wfEdit: null });
+    }
+  };
+  deleteWfMember = () => {
+    const w = this.state.wfEdit; if (!w || w.kind !== 'member' || w.isNew) return;
+    const list = (this.state.deptMembers[w.deptId] || []).filter(m => m.id !== w.mid);
+    const deptMembers = { ...this.state.deptMembers, [w.deptId]: list };
+    this.persist('wef_deptmembers', deptMembers);
+    this.setState({ deptMembers, wfEdit: null });
+  };
   removeDeptMember = (id, mid) => () => {
     const list = (this.state.deptMembers[id] || []).filter(m => m.id !== mid);
     const deptMembers = { ...this.state.deptMembers, [id]: list };
@@ -901,27 +1483,70 @@ class DashboardApp extends React.Component {
     setTimeout(() => URL.revokeObjectURL(url), 4000);
   };
 
-  openGuide = () => {
-    const DEPTS = (this.state.event === 'agm' ? this.AGM_DEPTS : this.DEPTS).map(d => ({ id: d.id, n: d.n, lead: d.lead, dep: d.dep }));
+  doLogin = (e) => {
+    e.preventDefault();
+    const f = new FormData(e.target);
+    const em = String(f.get('email') || '').trim().toLowerCase();
+    const pw = String(f.get('password') || '');
+    const users = this.state.users || [];
+    const uMatch = users.find(u => (u.email || '').toLowerCase() === em);
+    const map = { admin: 'admin', team: 'inputter', inputter: 'inputter', lead: 'lead', hotel: 'hotel', he: 'he' };
+    const role = uMatch ? uMatch.role : map[em.split('@')[0]];
+    if (!em || !pw || !role) { this.setState({ loginErr: true }); return; }
+    if (uMatch && uMatch.pass && uMatch.pass !== pw) { this.setState({ loginErr: true }); return; }
+    try { sessionStorage.setItem('wef_auth', '1'); sessionStorage.setItem('wef_auth_email', em); } catch (e2) {}
+    if (uMatch) { const users2 = users.map(u => u.id === uMatch.id ? { ...u, last: Date.now() } : u); this.persist('wef_users', users2); this.setState({ users: users2 }); }
+    this.persist('wef_role', role);
+    this.setState({ authed: true, loginErr: false, role, admin: role === 'admin' });
+  };
+  doSignOut = () => { try { sessionStorage.removeItem('wef_auth'); } catch (e) {} this.setState({ authed: false, loginErr: false }); };
+  openGuide = () => this.setState({ guideModal: true, guideOpts: this.state.guideOpts || { leaders: true, members: true, updates: false } });
+  closeGuide = () => this.setState({ guideModal: false });
+  toggleGuideOpt = (k) => () => this.setState(s => { const cur = s.guideOpts || { leaders: true, members: true, updates: false }; return { guideOpts: { ...cur, [k]: !cur[k] } }; });
+  runGuide = () => {
+    const opts = this.state.guideOpts || { leaders: true, members: true, updates: false };
+    const ar0 = this.state.lang === 'ar';
+    const tx0 = v => Array.isArray(v) ? v[ar0 ? 1 : 0] : v;
+    const eds0 = this.state.deptEdits || {}; const tasks0 = this.state.tasks || {};
+    const META0 = { ...this.DEPT_META, ...this.AGM_META };
+    const stL = this.T[this.state.lang].statuses; const prL0 = { h: ar0 ? 'عالية' : 'High', m: ar0 ? 'متوسطة' : 'Medium', l: ar0 ? 'منخفضة' : 'Low' };
+    const DEPTS = (this.state.event === 'agm' ? this.AGM_DEPTS : this.DEPTS).map(d => {
+      const e = eds0[d.id] || {};
+      const upd = e.upd != null ? String(e.upd).split('\n').map(x => x.trim()).filter(Boolean) : (d.upd || []).map(tx0);
+      const meta = META0[d.id] || { actions: [] };
+      const acts = [ ...((meta.actions) || []), ...((tasks0[d.id]) || []) ].map(a => ({ t: tx0(a.t), o: a.o, sl: stL[a.s], pr: prL0[a.pr], d: tx0(a.d), nx: tx0(a.nx) }));
+      return { id: d.id, n: d.n, lead: d.lead, dep: d.dep, upd: upd, acts: acts };
+    });
     const CHIEF = { n: [this.T.en.chiefName, this.T.ar.chiefName], r: [this.T.en.chiefRole, this.T.ar.chiefRole] };
     const PM = { n: [this.T.en.pmName, this.T.ar.pmName], r: [this.T.en.pmRole, this.T.ar.pmRole] };
-    const data = JSON.stringify({ DEPTS, CHIEF, PM, lang: this.state.lang });
-    const css = "\n      *{box-sizing:border-box}\n      body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','IBM Plex Sans Arabic',sans-serif;background:#EEF1F6;color:#17233B}\n      .page{max-width:1000px;margin:0 auto;padding:38px 44px 60px;background:#fff;min-height:100vh;box-shadow:0 0 40px rgba(15,36,64,.06)}\n      .top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;border-bottom:2px solid #1B66C9;padding-bottom:18px;margin-bottom:28px}\n      .gt{font-size:12px;font-weight:800;letter-spacing:.24em;color:#1B66C9;text-transform:uppercase}\n      .gh{font-size:26px;font-weight:800;letter-spacing:-.02em;margin:7px 0 3px}\n      .gs{font-size:12.5px;color:#6B7688}\n      .tools{display:flex;gap:8px;flex:none}\n      .tbtn{appearance:none;border:1px solid #E7EAF1;background:#fff;color:#17233B;font:inherit;font-size:12px;font-weight:600;padding:9px 17px;border-radius:999px;cursor:pointer}\n      .tbtn.p{background:#1B66C9;color:#fff;border-color:#1B66C9}\n      .execrow{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:34px}\n      .exc{flex:1;min-width:270px;display:flex;align-items:center;gap:14px;border-radius:16px;padding:16px 22px}\n      .exc.chief{background:linear-gradient(135deg,#0F2440,#1B3A63);color:#fff}\n      .exc.pm{background:#fff;border:1.5px solid #1B66C9}\n      .exc .cir{width:54px;height:54px;font-size:16px;margin:0}\n      .exc.chief .cir{background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.3)}\n      .exc.pm .cir{background:#1B66C9;color:#fff;border-color:#1B66C9}\n      .exc b{font-size:16px;display:block}\n      .exc span{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;opacity:.72;margin-top:2px;display:block}\n      .team{break-inside:avoid;margin-bottom:34px}\n      .tn{font-size:16.5px;font-weight:800;color:#1B66C9;letter-spacing:-.01em;margin-bottom:18px}\n      .leads{display:flex;gap:44px;flex-wrap:wrap;margin-bottom:20px}\n      .person{text-align:center;width:118px}\n      .cir{width:70px;height:70px;border-radius:50%;background:#EDEFF4;border:1px solid #DFE3EB;color:#7A8494;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;margin:0 auto 10px;background-size:cover;background-position:center;overflow:hidden}\n      .cir.big{width:90px;height:90px;font-size:23px}\n      .pn{font-size:12.5px;font-weight:700;color:#17233B;line-height:1.3}\n      .pr{font-size:11px;color:#6B7688;margin-top:3px}\n      .divi{display:flex;align-items:center;gap:14px;margin:8px 0 18px}\n      .divi .dl{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#8A93A2;white-space:nowrap}\n      .divi .dr{flex:1;height:1px;background:#DDE2EB}\n      .members{display:flex;flex-wrap:wrap;gap:30px}\n      .foot{text-align:center;color:#9AA3B2;font-size:11px;margin-top:20px;border-top:1px solid #EDEFF4;padding-top:16px}\n      @media print{.tools{display:none}body{background:#fff}.page{box-shadow:none;padding:0;max-width:none}.team{page-break-inside:avoid}}\n      @page{size:A4;margin:14mm}\n    ";
+    const GL = ar0
+      ? { upd: 'التحديثات', act: 'بنود العمل', owner: 'المسؤول', status: 'الحالة', pr: 'الأولوية', due: 'الاستحقاق', next: 'الإجراء التالي', none: 'لا يوجد' }
+      : { upd: 'Updates', act: 'Action Items', owner: 'Owner', status: 'Status', pr: 'Priority', due: 'Due', next: 'Next Action', none: '—' };
+    try { window.__wefGuideData = () => ({ MEM: this.state.deptMembers || {}, EDS: this.state.deptEdits || {}, PHO: this.state.photos || {} }); } catch (e) {}
+    const data = JSON.stringify({ DEPTS, CHIEF, PM, lang: this.state.lang, opts: opts, GL: GL, MEM: this.state.deptMembers || {}, EDS: this.state.deptEdits || {}, PHO: this.state.photos || {} });
+    const css = "*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','IBM Plex Sans Arabic',sans-serif;background:#E4E8F0;color:#1A2233}.page{max-width:1040px;margin:0 auto;padding:0 0 64px;background:#F7F9FC;min-height:100vh;box-shadow:0 0 40px rgba(15,36,64,.08)}.top{display:flex;justify-content:space-between;align-items:center;gap:16px;background:#E8ECF4;border-radius:0 0 28px 28px;padding:46px 52px;margin-bottom:44px}.gt{display:none}.gh{font-size:42px;font-weight:800;letter-spacing:-.02em;margin:0;display:flex;align-items:center;gap:24px}.gh::after{content:'';width:150px;height:3px;background:#2563C4;flex:none}.gs{font-size:13px;color:#6B7688;margin-top:10px}.tools{display:flex;gap:8px;flex:none}.tbtn{appearance:none;border:1px solid #D7DDE8;background:#fff;color:#1A2233;font:inherit;font-size:12px;font-weight:600;padding:9px 17px;border-radius:999px;cursor:pointer}.tbtn.p{background:#2563C4;color:#fff;border-color:#2563C4}.execrow{display:flex;gap:26px;flex-wrap:wrap;margin:0 52px 48px}.exc{flex:1;min-width:240px;display:flex;align-items:center;gap:16px;background:none;border:none;padding:0}.exc.chief{background:none;color:inherit}.exc.pm{background:none;border:none}.exc .cir{width:76px;height:76px;font-size:19px;margin:0}.exc.chief .cir,.exc.pm .cir{background-color:#DCE4F0;color:#2563C4;border-color:#2563C4}.exc>div{display:flex;flex-direction:column-reverse}.exc b{font-size:19px;font-weight:700;color:#1A2233;display:block}.exc span{font-size:12.5px;font-weight:700;color:#2563C4;text-transform:none;letter-spacing:0;opacity:1;margin:0 0 3px;display:block}.team{break-inside:avoid;margin:0 52px 44px}.tn{font-size:16.5px;font-weight:700;color:#1A2233;letter-spacing:-.01em;display:flex;align-items:center;gap:16px;margin-bottom:22px}.tn::after{content:'';flex:1;height:1px;background:#D9DFE9}.leads{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:22px;margin-bottom:24px}.person{display:grid;grid-template-columns:auto 1fr;column-gap:14px;align-items:center;text-align:start}.cir{grid-row:1/3;width:52px;height:52px;border-radius:50%;border:2px solid #2563C4;padding:3px;background-color:#DCE4F0;background-size:cover;background-position:center;background-origin:content-box;background-clip:content-box;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#2563C4}.cir.big{width:64px;height:64px;font-size:15px}.pn{font-size:14px;font-weight:600;align-self:end;line-height:1.35}.pr{font-size:11.5px;color:#6B7688;align-self:start;margin-top:2px;line-height:1.35}.person{break-inside:avoid}.leads .pn{font-size:15px;font-weight:700}.leads .pr{color:#2563C4;font-weight:700;font-size:11.5px}.divi{display:flex;align-items:center;gap:12px;margin:20px 0 18px}.dl{font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#6B7688}.dr{flex:1;height:1px;background:#E2E7F0}.members{display:grid;grid-template-columns:repeat(4,1fr);gap:22px 26px}@media(max-width:820px){.members{grid-template-columns:repeat(2,1fr)}}.foot{margin:34px 52px 0;font-size:11px;color:#9AA3B2}@page{size:A4;margin:0}@media print{body{background:#fff}.tools{display:none}.page{box-shadow:none;max-width:none;background:#fff;padding-bottom:40px}.top{border-radius:0;padding:38px 44px;margin-bottom:34px}.gh{font-size:32px}.gh::after{width:110px}.team{margin:0 44px 34px;break-inside:avoid;page-break-inside:avoid}.execrow{margin:0 44px 36px}.members{grid-template-columns:repeat(4,1fr)}.exc .cir{width:64px;height:64px}.exc b{font-size:17px}}";
     const js = "const D=" + data + ";let lang=D.lang||'en';\n" +
       "      const tx=v=>Array.isArray(v)?v[lang==='ar'?1:0]:v;\n" +
       "      const ini=s=>(s||'').trim().split(/\\s+/).map(x=>x[0]||'').slice(0,2).join('').toUpperCase();\n" +
       "      function read(k,d){try{var v=JSON.parse(localStorage.getItem(k));return v==null?d:v;}catch(e){return d;}}\n" +
-      "      function cir(id,i,big){var p=(read('wef_photos',{}))[id];var c=big?'cir big':'cir';return p?'<div class=\"'+c+'\" style=\"background-image:url('+p+')\"></div>':'<div class=\"'+c+'\">'+i+'</div>';}\n" +
+      "      function live(){try{if(window.opener&&window.opener.__wefGuideData){var L=window.opener.__wefGuideData();if(L){D.MEM=L.MEM||D.MEM;D.EDS=L.EDS||D.EDS;D.PHO=L.PHO||D.PHO;}}}catch(e){}}\n" +
+      "      function cir(id,i,big){var p=((D.PHO)||read('wef_photos',{}))[id];var c=big?'cir big':'cir';return p?'<div class=\"'+c+'\" style=\"background-image:url('+p+')\"></div>':'<div class=\"'+c+'\">'+i+'</div>';}\n" +
       "      function person(id,name,role,big){return '<div class=\"person\">'+cir(id,ini(name),big)+'<div class=\"pn\">'+name+'</div><div class=\"pr\">'+role+'</div></div>';}\n" +
       "      function render(){\n" +
       "        var ar=lang==='ar';document.documentElement.dir=ar?'rtl':'ltr';\n" +
-      "        var mem=read('wef_deptmembers',{});var eds=read('wef_deptedits',{});\n" +
+      "        var mem=(D.MEM)||read('wef_deptmembers',{});var eds=(D.EDS)||read('wef_deptedits',{});\n" +
       "        var MEM=ar?'أعضاء الفريق':'Team Members';var NONE=ar?'لم يُضَف أعضاء بعد':'No members added yet';\n" +
       "        var teams=D.DEPTS.map(function(d){var e=eds[d.id]||{};var list=(mem[d.id]||[]);\n" +
       "          var leadN=e.leadN||d.lead.n, leadT=e.leadT||tx(d.lead.t), depN=e.depN||d.dep.n, depT=e.depT||tx(d.dep.t);\n" +
       "          var leads=person('DL'+d.id,leadN,leadT,true)+person('DD'+d.id,depN,depT,true);\n" +
       "          var mm=list.length?list.map(function(m){return person(m.id,tx(m.n),tx(m.r),false);}).join(''):'<div class=\"pr\">'+NONE+'</div>';\n" +
-      "          return '<div class=\"team\"><div class=\"tn\">'+(e.n||tx(d.n))+'</div><div class=\"leads\">'+leads+'</div><div class=\"divi\"><span class=\"dl\">'+MEM+'</span><span class=\"dr\"></span></div><div class=\"members\">'+mm+'</div></div>';\n" +
+      "          var O=D.opts||{leaders:true,members:true,updates:false};var GL=D.GL||{};var sec='';\n" +
+      "          if(O.leaders)sec+='<div class=\"leads\">'+leads+'</div>';\n" +
+      "          if(O.members)sec+='<div class=\"divi\"><span class=\"dl\">'+MEM+'</span><span class=\"dr\"></span></div><div class=\"members\">'+mm+'</div>';\n" +
+      "          if(O.updates){var ul=(d.upd&&d.upd.length)?('<ul class=\"gul\">'+d.upd.map(function(u){return '<li>'+u+'</li>';}).join('')+'</ul>'):('<div class=\"pr\">'+GL.none+'</div>');\n" +
+      "            var rows=(d.acts&&d.acts.length)?d.acts.map(function(a){return '<tr><td>'+a.t+'</td><td>'+a.o+'</td><td>'+a.sl+'</td><td>'+a.pr+'</td><td>'+a.d+'</td><td>'+a.nx+'</td></tr>';}).join(''):('<tr><td colspan=\"6\" class=\"pr\">'+GL.none+'</td></tr>');\n" +
+      "            sec+='<div class=\"gsec\"><div class=\"gl2\">'+GL.upd+'</div>'+ul+'<div class=\"gl2\" style=\"margin-top:14px\">'+GL.act+'</div><table class=\"gat\"><thead><tr><th>'+GL.act+'</th><th>'+GL.owner+'</th><th>'+GL.status+'</th><th>'+GL.pr+'</th><th>'+GL.due+'</th><th>'+GL.next+'</th></tr></thead><tbody>'+rows+'</tbody></table></div>';}\n" +
+      "          return '<div class=\"team\"><div class=\"tn\">'+(e.n||tx(d.n))+'</div>'+sec+'</div>';\n" +
       "        }).join('');\n" +
       "        document.getElementById('app').innerHTML=\n" +
       "          '<div class=\"page\"><div class=\"top\"><div><div class=\"gt\">WEF Guide</div><div class=\"gh\">'+(ar?'دليل فريق عمليات المنتدى':'WEF Operations — Team Guide')+'</div><div class=\"gs\">'+(ar?'الاجتماع السنوي لمجالس المستقبل العالمية · 13 أكتوبر 2026 · دبي':'Annual Meeting of the Global Future Councils · 13 October 2026 · Dubai')+'</div></div>'\n" +
@@ -932,11 +1557,15 @@ class DashboardApp extends React.Component {
       "          +'<div class=\"foot\">'+(ar?'يعكس أحدث التغييرات في اللوحة':'Reflects the latest changes made in the dashboard')+'</div></div>';\n" +
       "        var lb=document.getElementById('lng');if(lb)lb.onclick=function(){lang=lang==='ar'?'en':'ar';render();};\n" +
       "      }\n" +
-      "      window.addEventListener('storage',render);window.addEventListener('focus',render);render();";
-    const html = "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>WEF Operations — Team Guide</title><style>" + css + "</style></head><body><div id=\"app\"></div><scr" + "ipt>" + js + "</scr" + "ipt></body></html>";
+      "      window.addEventListener('storage',render);window.addEventListener('focus',function(){live();render();});\n" +
+      "      setInterval(function(){var b=JSON.stringify([D.MEM,D.EDS,D.PHO]);live();if(JSON.stringify([D.MEM,D.EDS,D.PHO])!==b)render();},1200);\n" +
+      "      live();render();";
+    const GCSS = ".gsec{margin-top:16px}.gl2{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#1B66C9;margin-bottom:8px}.gul{margin:0 0 4px;padding-inline-start:18px}.gul li{font-size:12.5px;line-height:1.6;color:#17233B}.gat{width:100%;border-collapse:collapse;margin-top:4px}.gat th{font-size:9px;text-transform:uppercase;letter-spacing:.05em;color:#6B7688;text-align:start;padding:0 8px 6px;border-bottom:1px solid #E7EAF1;font-weight:700}.gat td{font-size:10.5px;padding:7px 8px;border-bottom:1px solid #EDF1F7;color:#17233B;vertical-align:top}.gat td:first-child{font-weight:600}";
+    const html = "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>WEF Operations — Team Guide</title><style>" + css + GCSS + "</style></head><body><div id=\"app\"></div><scr" + "ipt>" + js + "</scr" + "ipt></body></html>";
     const blob = new Blob([html], { type: 'text/html' });
         const url = URL.createObjectURL(blob);
     window.open(url, 'wef_guide');
+    this.setState({ guideModal: false });
   };
 
   renderVals() {
@@ -948,39 +1577,73 @@ class DashboardApp extends React.Component {
     const EX = ar ? {
       opTracker: 'المتتبع التشغيلي', close: 'إغلاق', viewTeam: 'عرض الفريق', apprItem: 'بند الموافقة', responsible: 'المسؤول', exportSummaryL: 'تصدير ملخص الفريق', roleLabel: 'الدور / المسؤولية',
       backToTracker: 'العودة إلى المتتبع التشغيلي', nextDue: 'الاستحقاق التالي', openItems: 'بند عمل مفتوح', delayL: 'التأخير', delayFlag: 'متأخر عن الجدول',
-      thAction: 'الإجراء / المهمة', thPriority: 'الأولوية', thDependency: 'التبعية', thNext: 'الإجراء التالي', exportTimeline: 'تصدير الجدول', addToCalL: 'إضافة إلى التقويم', locationL: 'الموقع', teamOwner: 'المسؤول / الفريق', notesL: 'ملاحظات', dateL: 'التاريخ', timeL: 'الوقت',
+      trkViewTable: 'جدول', trkViewCards: 'بطاقات',
+      thAction: 'الإجراء / المهمة', thPriority: 'الأولوية', thDependency: 'التبعية', thNext: 'الخطوات التالية', thChal: 'التحديات', thApproval: 'الاعتماد', mtToggleL: 'تتضمن هذه المهمة اجتماعاً', mtChipL: 'اجتماع', mtRecL: 'المدعوون للاجتماع', mtPurL: 'الغرض', mtLocL: 'الموقع', mtTimeL: 'التوقيت', exportTimeline: 'تصدير الجدول', editSessionL: 'تعديل الجلسة', editDayL: 'تعديل اليوم', subtitleL: 'العنوان الفرعي', sessionTitleL: 'عنوان الجلسة', dayTitleL: 'عنوان اليوم', taglineL: 'الوصف', addToCalL: 'إضافة إلى التقويم', locationL: 'الموقع', teamOwner: 'المسؤول / الفريق', notesL: 'ملاحظات', dateL: 'التاريخ', timeL: 'الوقت',
+      empDirT: 'دليل الموظفين', empDirTxt: 'ارفع ملف CSV (من إكسل) يتضمن أسماء الموظفين وبريدهم الإلكتروني وأرقام هواتفهم. عند إضافة أعضاء لفريق العمل يمكنك البحث في الدليل واختيار الموظف بدلاً من كتابة بياناته.', empDirUploadL: 'رفع الملف (CSV)', empDirClearL: 'مسح الدليل', empSearchL: 'البحث في دليل الموظفين', empSearchPh: 'اكتب اسماً أو بريداً أو رقم هاتف…', accReqL: 'هل يحتاج الموظف إلى سكن؟', nomPendingT: 'تعديلات فريق العمل قيد الاعتماد', nomPendingPill: 'قيد الاعتماد', nomApproveL: 'اعتماد', nomRejectL: 'رفض', nomInExecL: 'تتم المراجعة والاعتماد في لوحة النظرة التنفيذية.', notifT: 'إجراء مطلوب', notifEmpty: 'لا توجد إجراءات مطلوبة حالياً.',
+      fbTitle: 'ملاحظات ما بعد الفعالية', fbSub: 'شارك ملاحظاتك حول فريقك أو أي فريق آخر بعد انتهاء الفعالية.', fbLockedT: 'تُفتح الملاحظات بعد انتهاء الفعالية', fbLockedTxt: 'تُفتح هذه الصفحة تلقائياً بعد اكتمال الفعالية، ليتمكن كل فريق من ترك ملاحظاته حول فريقه أو الفرق الأخرى.', fbOpenNowL: 'فتح الملاحظات الآن (الإدارة)', fbFormT: 'إرسال ملاحظات', fbNameL: 'اسمك', fbNamePh: 'الاسم الكامل…', fbOwnTeamL: 'فريقك', fbTeamL: 'عن أي فريق هذه الملاحظات؟', fbTextL: 'الملاحظات', fbTextPh: 'اكتب ملاحظاتك — ما الذي سار جيداً وما الذي يمكن تحسينه…', fbSubmitL: 'إرسال الملاحظات', fbListT: 'الملاحظات المرسلة', fbEmpty: 'لا توجد ملاحظات بعد.', fbExportL: 'استخراج التقرير (إكسل)',
+      htTitle: 'الإقامة الفندقية', htSub: 'الموظفون الذين يحتاجون إلى سكن من جميع الفرق. عيّن الفندق ورقم التأكيد ومواعيد الدخول والخروج وشريك السكن ثم استخرج القائمة.', htExportL: 'استخراج القائمة (إكسل)', htTeamL: 'الفريق', htContactL: 'التواصل', htGenderL: 'الجنس', htHotelL: 'الفندق', htRoomL: 'الغرفة', htConfL: 'رقم التأكيد', htStayL: 'الدخول / الخروج', htCinL: 'تسجيل الدخول', htCoutL: 'تسجيل الخروج', htConfPh: 'مرجع الحجز…', htRoommateL: 'شريك السكن', htPrefL: 'يفضّل', htRejectMateL: 'رفض شريك السكن', htApproveMateL: 'اعتماد شريك السكن', htApprovedL: 'معتمد', htNotifyL: 'إشعار', htWaL: 'إرسال تأكيد واتساب', htEmL: 'إرسال تأكيد بالبريد', htNotifyHint: 'عيّن الفندق أولاً', htEmTag: 'أُرسل البريد', htWaTag: 'أُرسل واتساب', htMaleL: 'ذكر', htFemaleL: 'أنثى', htHotelPh: 'اسم الفندق…', htRoomPh: 'رقم', htRoommatePh: 'شريك السكن المعيّن…', htEmptyT: 'لا توجد طلبات سكن بعد', htEmptyTxt: 'سيظهر هنا تلقائياً الموظفون الذين تم تحديدهم بحاجة إلى سكن في فرق العمل.', yesL: 'نعم', noL: 'لا', accPartnerL: 'في حال كان السكن مشتركاً، اقترح شريك السكن المفضل.', accPartnerPh: 'شريك السكن المفضل…',
       setTitle: 'الإعدادات', setSub: 'اللغة والوصول الإداري وبيانات التطبيق.',
+      shareL: 'مشاركة', pdfReadyTitle: 'ملف PDF جاهز', pdfReadyMsg: 'تم إنشاء ملف PDF لصفحة الفريق.', downloadPdfL: 'تحميل PDF', sharePdfL: 'مشاركة PDF', openWhatsappL: 'فتح واتساب',
+      apprTitle: 'الاعتمادات', apprSub: 'جميع طلبات الاعتماد من صفحات الفرق مع إمكانية إنشاء طلب جديد.', createApprL: 'إنشاء طلب اعتماد', createApprTitle: 'طلب اعتماد جديد',
+      apprPending: 'قيد الاعتماد', apprApprovedWk: 'اعتُمد هذا الأسبوع', apprRejectedN: 'طلبات مرفوضة', apprHighN: 'اعتمادات عالية الأولوية',
+      apprTeamL: 'الفريق', apprByL: 'مقدَّم من', apprEventL: 'الفعالية', apprReqDateL: 'تاريخ الطلب', apprPriorityL: 'الأولوية', apprDescL: 'الوصف',
+      apprAttachPh: 'ملاحظات داعمة / مرفق — عنصر نائب.', apprAttachL: 'مرفق', apprEmpty: 'لا توجد طلبات اعتماد حالياً.',
+      apprRejReasonL: 'سبب الرفض', apprRejPh: 'اكتب سبب الرفض…', apprConfirmReject: 'تأكيد الرفض', apprActivityL: 'سجل النشاط',
+      apprCommentL: 'تعليقك', apprCommentPh: 'اكتب تعليقاً…', apprAddComment: 'إضافة تعليق', apprApprove: 'اعتماد', apprReject: 'رفض', apprFTitle: 'عنوان الطلب', apprSubmit: 'إرسال الطلب',
+      uploadL: 'رفع', uploadPh: 'انقر لرفع ملف (بحد أقصى 2 ميغابايت)', viewL: 'عرض', downloadL: 'تنزيل', viewDetailsL: 'عرض التفاصيل',
+      designTitle: 'تصميم الفعالية', designSub: 'جميع مواد التصميم الخاصة بالفعالية في مكان واحد.', designReadinessL: 'جاهزية التصميم', designAssetsL: 'ملفات مرفوعة', designOwnerL: 'مسؤول التصميم', designUpdatedL: 'آخر تحديث', designPendingL: 'اعتمادات معلقة', designEmpty: 'لم يتم رفع ملفات تصميم بعد.',
+      calTitle: 'تقويم الفعاليات القادمة', calCreateNew: 'إنشاء جديد',
+      latestUpdL: 'آخر التحديثات', leadershipL: 'قادة الفريق', noUpdYet: 'لم يُرفع تحديث بعد',
+      challengesL: 'التحديات', apprL: 'الموافقات المعلقة', nextStepsL: 'الخطوات التالية', tasksL: 'مهمة', noneYet: '—',
+      wfPhotoL: 'إضافة صورة', wfNameL: 'الاسم', wfRoleL: 'الدور / المسؤولية', wfSaveL: 'حفظ', wfDeleteL: 'إزالة',
       shareCommentL: 'مشاركة تعليق', sharePreviewL: 'معاينة البطاقة', shareCommentPh: 'أضف تعليقك قبل المشاركة…', shareMsgPreviewL: 'معاينة الرسالة', copyMsgL: 'نسخ الرسالة', shareWhatsappL: 'مشاركة عبر واتساب', shareEmailL: 'مشاركة عبر البريد الإلكتروني', shareCommentTitle: 'مشاركة تعليق',
       commentL: 'تعليق', yourCommentL: 'تعليقك', yourCommentPh: 'اكتب تعليقك هنا…', teamPageLinkL: 'رابط صفحة الفريق', openTeamPageL: 'فتح صفحة الفريق', sendWhatsappL: 'إرسال عبر واتساب', eventNameL: 'الفعالية', selectToComment: 'اختر عنصرًا للتعليق', commentingOnL: 'التعليق على',
       setLang: 'اللغة', setAccess: 'صلاحية الإدارة', setAccessTxt: 'فعّل صلاحية الإدارة لإتاحة التعديل وعرض تفصيل الميزانية.',
       setTheme: 'كثافة العرض', setThemeTxt: 'بدّل بين العرض المريح والمضغوط حسب تفضيلك.',
       setData: 'البيانات المحلية', setDataTxt: 'إعادة ضبط البيانات التجريبية المحفوظة في هذا المتصفح.', setReset: 'إعادة ضبط البيانات التجريبية',
       setDensity: 'كثافة العرض', densComfort: 'مريح', densCompact: 'مضغوط',
-      backToEvents: 'العودة إلى الفعاليات', eventsTracker: 'متتبع الفعاليات', landingSub: 'وزارة شؤون مجلس الوزراء · متتبع الفعاليات الحكومية',
+      backToEvents: 'رجوع', eventsTracker: 'متتبع الفعاليات', landingSub: 'وزارة شؤون مجلس الوزراء · متتبع الفعاليات الحكومية',
       openTrackerL: 'فتح المتتبع', addEventT: 'إضافة فعالية جديدة', createNewL: 'إنشاء جديد', createTrackerL: 'إنشاء المتتبع',
       fEvName: 'اسم الفعالية', fEvNameAr: 'اسم الفعالية بالعربية', fEvLogo: 'شعار الفعالية', fEvLogoHint: 'تحميل الشعار (اختياري)', fEvPeriod: 'تاريخ / فترة الفعالية', fEvOwner: 'الفريق المسؤول',
       emptyUpdates: 'لا توجد تحديثات بعد', emptyOps: 'لا توجد بنود تشغيلية بعد', emptyTimelineL: 'لا توجد بنود زمنية بعد', emptySubmits: 'لا توجد تحديثات مُرسلة بعد',
       budgetTitle: 'تفصيل الميزانية', budgetLocked: 'فعّل صلاحية الإدارة لعرض تفصيل الميزانية.', blankOverviewSub: 'لم تُنشر مؤشرات الملخص التنفيذي لهذه الفعالية بعد. القوى العاملة ومتابعة الفرق متاحة في متتبع العمليات.',
       addTeamL: 'إضافة فريق', importL: 'استيراد CSV', removeL: 'إزالة', teamNameL: 'الفريق / مسار العمل', teamNameArL: 'الاسم بالعربية',
-      ovReadiness: 'الجاهزية التشغيلية العامة', ovStatusTitle: 'حالة الفرق', ovAttnTitle: 'بنود تتطلب المتابعة', ovAttnSubT: 'الفرق التي تحتاج انتباه الإدارة، مرتبة حسب الحالة', ovTeams: 'الفرق', ovTeamsSub: 'إجمالي الفرق التشغيلية', ovOnTrackSub: 'على المسار الصحيح', ovAttnSub: 'تتطلب المتابعة', ovRiskSub: 'معرّضة للخطر', ovOpenActions: 'بنود العمل المفتوحة', ovOpenActionsSub: 'عبر جميع الفرق', ovApprSub: 'بانتظار الاعتماد', ovHeroNote: 'الجاهزية محسوبة من متوسط تقدّم جميع الفرق التشغيلية.', ovAgmNote: 'تُبنى هذه اللوحة من تحديثات فريق العمليات للاجتماعات السنوية.', reviewTeams: 'عرض الفرق ←', zeroSub: 'ابنِ المتتبع التشغيلي لهذه الفعالية بإضافة فريق لكل مسار عمل، أو استوردها من ملف CSV (الأعمدة: Team, Lead, Deputy, Progress, Status, Due).', zeroLocked: 'فعّل صلاحية الإدارة لبناء المتتبع التشغيلي.'
+      opsUpdTitle: 'مستجدات العمليات', ovReadiness: 'الجاهزية التشغيلية العامة', ovStatusTitle: 'حالة الفرق', ovAttnTitle: 'بنود تتطلب المتابعة', ovAttnSubT: 'الفرق التي تحتاج انتباه الإدارة، مرتبة حسب الحالة', ovTeams: 'الفرق', ovTeamsSub: 'إجمالي الفرق التشغيلية', ovOnTrackSub: 'على المسار الصحيح', ovAttnSub: 'تتطلب المتابعة', ovRiskSub: 'معرّضة للخطر', ovOpenActions: 'بنود العمل المفتوحة', ovOpenActionsSub: 'عبر جميع الفرق', ovApprSub: 'بانتظار الاعتماد', ovHeroNote: 'الجاهزية محسوبة من متوسط تقدّم جميع الفرق التشغيلية.', ovAgmNote: 'تُبنى هذه اللوحة من تحديثات فريق العمليات للاجتماعات السنوية.', reviewTeams: 'عرض الفرق ←', zeroSub: 'ابنِ المتتبع التشغيلي لهذه الفعالية بإضافة فريق لكل مسار عمل، أو استوردها من ملف CSV (الأعمدة: Team, Lead, Deputy, Progress, Status, Due).', zeroLocked: 'فعّل صلاحية الإدارة لبناء المتتبع التشغيلي.'
     } : {
       opTracker: 'Operational Tracker', close: 'Close', viewTeam: 'View team', apprItem: 'Approval Item', responsible: 'Responsible', exportSummaryL: 'Export Team Summary', roleLabel: 'Role / responsibility',
       backToTracker: 'Back to Operational Tracker', nextDue: 'Next Due', openItems: 'open action items', delayL: 'Delay', delayFlag: 'Behind schedule',
-      thAction: 'Action / Task', thPriority: 'Priority', thDependency: 'Dependency', thNext: 'Next Action', exportTimeline: 'Export Timeline', addToCalL: 'Add to Calendar', locationL: 'Location', teamOwner: 'Owner / Team', notesL: 'Notes', dateL: 'Date', timeL: 'Time',
+      trkViewTable: 'Table', trkViewCards: 'Cards',
+      thAction: 'Action / Task', thPriority: 'Priority', thDependency: 'Dependency', thNext: 'Next Steps', thChal: 'Challenges', thApproval: 'Approval', mtToggleL: 'This task includes a meeting', mtChipL: 'Meeting', mtRecL: 'Meeting Recipients', mtPurL: 'Purpose', mtLocL: 'Location', mtTimeL: 'Timing', exportTimeline: 'Export Timeline', editSessionL: 'Edit Session', editDayL: 'Edit Day', subtitleL: 'Subtitle', sessionTitleL: 'Session title', dayTitleL: 'Day title', taglineL: 'Tagline', addToCalL: 'Add to Calendar', locationL: 'Location', teamOwner: 'Owner / Team', notesL: 'Notes', dateL: 'Date', timeL: 'Time',
+      empDirT: 'Employee Directory', empDirTxt: 'Upload a CSV sheet (exported from Excel) with employee names, email addresses and phone numbers. When adding workforce members you can then search the directory and pick an employee instead of typing their details.', empDirUploadL: 'Upload Sheet (CSV)', empDirClearL: 'Clear Directory', empSearchL: 'Search Employee Directory', empSearchPh: 'Type a name, email or phone…', accReqL: 'Does the employee require accommodation?', nomPendingT: 'Pending Workforce Approvals', nomPendingPill: 'Pending Approval', nomApproveL: 'Approve', nomRejectL: 'Reject', nomInExecL: 'Review and approve in the Executive Overview.', notifT: 'Action Required', notifEmpty: 'Nothing needs your action right now.',
+      fbTitle: 'Post-Event Feedback', fbSub: 'Share feedback about your own team or any other team once the event has concluded.', fbLockedT: 'Feedback opens after the event', fbLockedTxt: 'This page unlocks automatically once the event is completed. Teams can then leave feedback about their own team or other teams.', fbOpenNowL: 'Open feedback now (Admin)', fbFormT: 'Submit Feedback', fbNameL: 'Your name', fbNamePh: 'Full name…', fbOwnTeamL: 'Your team', fbTeamL: 'Which team is this feedback about?', fbTextL: 'Feedback', fbTextPh: 'Write your feedback — what went well, what could improve…', fbSubmitL: 'Submit Feedback', fbListT: 'Submitted Feedback', fbEmpty: 'No feedback submitted yet.', fbExportL: 'Extract Report (Excel)',
+      htTitle: 'Hotel Accommodation', htSub: 'Employees who require accommodation across all teams. Assign hotel, confirmation number, check-in/check-out and roommate, then extract the list.', htExportL: 'Extract List (Excel)', htTeamL: 'Team', htContactL: 'Contact', htGenderL: 'Gender', htHotelL: 'Hotel', htRoomL: 'Room', htConfL: 'Confirmation #', htStayL: 'Check-in / Check-out', htCinL: 'Check-in', htCoutL: 'Check-out', htConfPh: 'Booking ref…', htRoommateL: 'Roommate', htPrefL: 'Prefers', htRejectMateL: 'Reject roommate', htApproveMateL: 'Approve roommate', htApprovedL: 'Approved', htNotifyL: 'Notify', htWaL: 'Send WhatsApp confirmation', htEmL: 'Send email confirmation', htNotifyHint: 'Assign hotel first', htEmTag: 'Email sent', htWaTag: 'WhatsApp sent', htMaleL: 'Male', htFemaleL: 'Female', htHotelPh: 'Hotel name…', htRoomPh: 'No.', htRoommatePh: 'Assigned roommate…', htEmptyT: 'No accommodation requests yet', htEmptyTxt: 'Employees marked as requiring accommodation in the team workforce will appear here automatically.', yesL: 'Yes', noL: 'No', accPartnerL: 'In case accommodation is shared, recommend a preferred roommate.', accPartnerPh: 'Preferred roommate…',
       setTitle: 'Settings', setSub: 'Language, management access, and local app data.',
+      shareL: 'Share', pdfReadyTitle: 'PDF Ready', pdfReadyMsg: 'Your team page PDF has been generated.', downloadPdfL: 'Download PDF', sharePdfL: 'Share PDF', openWhatsappL: 'Open WhatsApp',
+      apprTitle: 'Approvals', apprSub: 'All approval requests from team pages, plus manually created requests.', createApprL: 'Create Approval Request', createApprTitle: 'New Approval Request',
+      apprPending: 'Pending Approvals', apprApprovedWk: 'Approved This Week', apprRejectedN: 'Rejected Items', apprHighN: 'High-Priority Approvals',
+      apprTeamL: 'Team', apprByL: 'Requested By', apprEventL: 'Event', apprReqDateL: 'Request Date', apprPriorityL: 'Priority', apprDescL: 'Description',
+      apprAttachPh: 'Supporting notes / attachment — placeholder.', apprAttachL: 'Attachment', apprEmpty: 'No approval requests yet.',
+      apprRejReasonL: 'Rejection Reason', apprRejPh: 'Add a short rejection reason…', apprConfirmReject: 'Confirm Rejection', apprActivityL: 'Activity History',
+      apprCommentL: 'Your comment', apprCommentPh: 'Write a comment…', apprAddComment: 'Add Comment', apprApprove: 'Approve', apprReject: 'Reject', apprFTitle: 'Approval title', apprSubmit: 'Submit Request',
+      uploadL: 'Upload', uploadPh: 'Click to upload a file (max 2 MB)', viewL: 'View', downloadL: 'Download', viewDetailsL: 'View Details',
+      designTitle: 'Event Design', designSub: 'All event design materials for this event in one organized place.', designReadinessL: 'Design Readiness', designAssetsL: 'Uploaded Assets', designOwnerL: 'Design Owner', designUpdatedL: 'Last Updated', designPendingL: 'Pending Approvals', designEmpty: 'No design files uploaded yet.',
+      calTitle: 'Upcoming Events Calendar', calCreateNew: 'Create New',
+      latestUpdL: 'Latest Updates', leadershipL: 'Team Leads', noUpdYet: 'No update submitted yet',
+      challengesL: 'Challenges', apprL: 'Pending Approvals', nextStepsL: 'Next Steps', tasksL: 'tasks', noneYet: '—',
+      wfPhotoL: 'Add photo', wfNameL: 'Name', wfRoleL: 'Role / Responsibility', wfSaveL: 'Save', wfDeleteL: 'Remove',
       shareCommentL: 'Share Comment', sharePreviewL: 'Card preview', shareCommentPh: 'Add your comment before sharing…', shareMsgPreviewL: 'Message preview', copyMsgL: 'Copy Message', shareWhatsappL: 'Share via WhatsApp', shareEmailL: 'Share via Email', shareCommentTitle: 'Share Comment',
       commentL: 'Comment', yourCommentL: 'Your comment', yourCommentPh: 'Write your comment here…', teamPageLinkL: 'Team page link', openTeamPageL: 'Open team page', sendWhatsappL: 'Send WhatsApp', eventNameL: 'Event', selectToComment: 'Select an item to comment', commentingOnL: 'Commenting On',
       setLang: 'Language', setAccess: 'Management Access', setAccessTxt: 'Enable Management Access to unlock editing and detailed budget breakdowns.',
       setTheme: 'Display Density', setThemeTxt: 'Switch between comfortable and compact layouts to suit your preference.',
       setData: 'Local Data', setDataTxt: 'Reset demo data, members, photos and saved edits stored in this browser.', setReset: 'Reset demo data',
       setDensity: 'Display Density', densComfort: 'Comfortable', densCompact: 'Compact',
-      backToEvents: 'Back to Events', eventsTracker: 'Events Tracker', landingSub: 'Ministry of Cabinet Affairs ',
+      backToEvents: 'Back', eventsTracker: 'Events Tracker', landingSub: 'Ministry of Cabinet Affairs ',
       openTrackerL: 'Open Tracker', addEventT: 'Add New Event', createNewL: 'Create New', createTrackerL: 'Create Tracker',
       fEvName: 'Event name', fEvNameAr: 'Arabic event name', fEvLogo: 'Event logo', fEvLogoHint: 'Upload logo (optional)', fEvPeriod: 'Event date / period', fEvOwner: 'Lead team / owner',
       emptyUpdates: 'No updates added yet', emptyOps: 'No operational items added yet', emptyTimelineL: 'No timeline items added yet', emptySubmits: 'No submitted updates yet',
       budgetTitle: 'Detailed Budget Breakdown', budgetLocked: 'Enable Management Access to view the detailed budget breakdown.', blankOverviewSub: 'Executive summary metrics haven’t been published for this event yet. The operational workforce and team tracking are available in the Operational Tracker.',
       addTeamL: 'Add Team', importL: 'Import CSV', removeL: 'Remove', teamNameL: 'Team / Streamline', teamNameArL: 'Arabic name',
-      ovReadiness: 'Overall Operational Readiness', ovStatusTitle: 'Team Status', ovAttnTitle: 'Items Requiring Attention', ovAttnSubT: 'Teams needing management attention, ordered by status', ovTeams: 'Teams', ovTeamsSub: 'Total operational teams', ovOnTrackSub: 'On track', ovAttnSub: 'Need attention', ovRiskSub: 'At risk', ovOpenActions: 'Open Action Items', ovOpenActionsSub: 'Across all teams', ovApprSub: 'Awaiting sign-off', ovHeroNote: 'Readiness is the average progress across all operational teams.', ovAgmNote: 'This dashboard is built from the Annual Government Meetings operations team updates.', reviewTeams: 'View teams →', zeroSub: 'Build this event’s operational tracker by adding a team for each streamline, or import them from a CSV sheet (columns: Team, Lead, Deputy, Progress, Status, Due).', zeroLocked: 'Enable Management Access to build the operational tracker.'
+      opsUpdTitle: 'Operations Updates', ovReadiness: 'Overall Operational Readiness', ovStatusTitle: 'Team Status', ovAttnTitle: 'Items Requiring Attention', ovAttnSubT: 'Teams needing management attention, ordered by status', ovTeams: 'Teams', ovTeamsSub: 'Total operational teams', ovOnTrackSub: 'On track', ovAttnSub: 'Need attention', ovRiskSub: 'At risk', ovOpenActions: 'Open Action Items', ovOpenActionsSub: 'Across all teams', ovApprSub: 'Awaiting sign-off', ovHeroNote: 'Readiness is the average progress across all operational teams.', ovAgmNote: 'This dashboard is built from the Annual Government Meetings operations team updates.', reviewTeams: 'View teams →', zeroSub: 'Build this event’s operational tracker by adding a team for each streamline, or import them from a CSV sheet (columns: Team, Lead, Deputy, Progress, Status, Due).', zeroLocked: 'Enable Management Access to build the operational tracker.'
     };
 
     const target = new Date('2026-10-13T09:00:00+04:00').getTime();
@@ -1010,14 +1673,22 @@ class DashboardApp extends React.Component {
     }
     const deptEdits = st.deptEdits || {};
     const deptMembersS = st.deptMembers || {};
+    const role = st.role || 'inputter';
+    const canExec = role === 'admin' || role === 'he';
+    const pageEff = (st.page === 'mgmt' && !st.admin) ? 'dash' : (((st.page === 'overview' || st.page === 'approvals') && !canExec) ? 'dash' : st.page);
     const ACTIVE_DEPTS = st.event === 'agm' ? this.AGM_DEPTS : (st.event === 'wef' ? this.DEPTS : []);
+    const _myStream0 = role === 'inputter' ? (st.myStreams || {})[st.event] : null;
     const ALL_DEPTS = [...this.DEPTS, ...this.AGM_DEPTS];
     const META = { ...this.DEPT_META, ...this.AGM_META };
+    const customTasks = st.tasks || {};
+    const taskOvAll = st.taskOv || {};
+    const taskDelAll = st.taskDel || {};
+    const teamActionsOf = (id) => { const base = [...((META[id] || {}).actions || []), ...((customTasks[id] || []))]; const ov = taskOvAll[id] || {}; const del = taskDelAll[id] || []; return base.map((a, i) => ({ ...(ov[i] ? { ...a, ...ov[i] } : a), _i: i })).filter(a => !del.includes(a._i)); };
     const ACTIVE_EVENT = st.event === 'agm' ? this.AGM_EVENT : (st.event === 'wef' ? this.EVENT : []);
     const depEnrich = (d) => {
       const e2 = deptEdits[d.id] || {};
       const meta = META[d.id] || { p: 0, due: '', delay: false, actions: [] };
-      const sx = e2.s || d.s;
+      const sx = (() => { const acts = teamActionsOf(d.id); if (!acts.length) return e2.s || d.s; if (acts.some(a => a.s === 'r')) return 'r'; if (acts.some(a => a.s === 'a')) return 'a'; return 'g'; })();
       const upd = e2.upd != null ? String(e2.upd).split('\n').map(x => x.trim()).filter(Boolean) : d.upd.map(tx);
       const chal = e2.chal != null ? String(e2.chal).split('\n').map(x => x.trim()).filter(Boolean) : d.chal.map(tx);
       const leadN = e2.leadN || d.lead.n, depN = e2.depN || d.dep.n;
@@ -1025,28 +1696,63 @@ class DashboardApp extends React.Component {
         id: d.id, n: e2.n || tx(d.n), s: sx, sl: t.statuses[sx], pill: STATUS[sx].pill, tcCls: 'tc-' + sx, u: e2.u || txd(d.u),
         leadN, leadT: e2.leadT || tx(d.lead.t), depN, depT: e2.depT || tx(d.dep.t), depInit: initials(depN),
         leadPhoto: this.photoObj('DL' + d.id, initials(leadN)), depPhoto: this.photoObj('DD' + d.id, initials(depN)),
-        upd, chal,
+        leadNoPhoto: !this.state.photos['DL' + d.id], depNoPhoto: !this.state.photos['DD' + d.id],
+        upd, chal, latestUpd: upd[0] || '', hasLatestUpd: upd.length > 0, noLatestUpd: upd.length === 0,
+        chalFirst: chal[0] || '', hasChal: chal.length > 0, noChal: chal.length === 0,
         apprItem: e2.apprItem || tx(d.appr.item), apprDec: e2.apprDec || tx(d.appr.dec), apprOwner: e2.apprOwner || d.appr.owner, apprDue: e2.apprDue || txd(d.appr.due),
         nextAction: e2.nextAction || tx(d.next.action), nextWho: e2.nextWho || d.next.who, nextDue: e2.nextDue || txd(d.next.due),
-        p: meta.p, col: STATUS[sx].col, due: txd(meta.due), delay: !!meta.delay, openCount: (meta.actions || []).length,
-        open: this.openTeam(d.id), edit: this.openDeptEdit(d.id), share: this.openShareTeam(d.id)
+        p: (() => { const acts = teamActionsOf(d.id); if (!acts.length) return (e2.p != null ? e2.p : meta.p); return Math.round(acts.filter(a => a.s === 'g' || a.s === 'd').length / acts.length * 100); })(), col: STATUS[sx].col, due: txd(meta.due), delay: !!meta.delay, openCount: teamActionsOf(d.id).length,
+        open: this.openTeam(d.id), edit: this.openDeptEdit(d.id)
       };
     };
     const depts = ACTIVE_DEPTS.map(depEnrich);
+    const _leadSet = role === 'lead' ? this._leadStreams() : null;
+    const myDepts = _leadSet ? depts.filter(d => _leadSet.indexOf(d.id) !== -1) : (_myStream0 ? depts.filter(d => d.id === _myStream0) : []);
+    const otherDepts = _leadSet ? depts.filter(d => _leadSet.indexOf(d.id) === -1) : (_myStream0 ? depts.filter(d => d.id !== _myStream0) : depts);
+    const _allTasks = depts.reduce((s, d) => s + teamActionsOf(d.id).length, 0);
+    const _doneTasks = depts.reduce((s, d) => s + teamActionsOf(d.id).filter(a => a.s === 'g').length, 0);
+    const taskReadiness = _allTasks ? Math.round(_doneTasks / _allTasks * 100) : 0;
+    const taskReadinessNote = ar ? (_doneTasks + ' من ' + _allTasks + ' مهمة مكتملة') : (_doneTasks + ' of ' + _allTasks + ' tasks completed');
     const prLbl = { h: ar ? 'عالية' : 'High', m: ar ? 'متوسطة' : 'Medium', l: ar ? 'منخفضة' : 'Low' };
+    const tsLbl = { n: ar ? 'لم يبدأ' : 'Not Started', p: ar ? 'قيد التنفيذ' : 'In Progress', a: ar ? 'يتطلب متابعة' : 'Attention', g: ar ? 'مكتمل' : 'Completed' };
+    const tsPill = { n: 'pg-neutral', p: 'pg-b', a: 'pg-a', g: 'pg-g' };
+    const tsk = s => ({ r: 'a', d: 'g' }[s] || (tsLbl[s] ? s : 'p'));
+    const apLbl = { req: ar ? 'مطلوب' : 'Required', nr: ar ? 'غير مطلوب' : 'Not Required', pend: ar ? 'قيد الاعتماد' : 'Pending' };
+    const apPill = { req: 'pg-a', nr: 'pg-neutral', pend: 'pg-b' };
+    const taskDrafts = st.taskDrafts || [];
+    const taskDraftRows = taskDrafts.map((d, i) => ({
+      task: d.task || '', owner: d.owner || '', due: d.due || '', dep: d.dep || '', nx: d.nx || '', num: String(i + 1),
+      statusOpts: ['n', 'p', 'a', 'g'].map(v => ({ v, t: tsLbl[v], sel: tsk(d.s || 'n') === v })),
+      prOpts: [['h', prLbl.h], ['m', prLbl.m], ['l', prLbl.l]].map(p => ({ v: p[0], t: p[1], sel: (d.pr || 'm') === p[0] })),
+      onTask: this.setTaskDraft(i, 'task'), onOwner: this.setTaskDraft(i, 'owner'), onDue: this.setTaskDraft(i, 'due'),
+      onDep: this.setTaskDraft(i, 'dep'), onNx: this.setTaskDraft(i, 'nx'), onStatus: this.setTaskDraft(i, 's'), onPr: this.setTaskDraft(i, 'pr'),
+      remove: () => this.removeTaskDraft(i)
+    }));
     let teamView = null;
     if (st.teamView != null) {
       const dd = ALL_DEPTS.find(x => x.id === st.teamView);
       if (dd) {
         const dx = depEnrich(dd);
         const meta = META[dd.id] || { actions: [] };
-        const mem = (deptMembersS[dd.id] || []).map(m => ({ n: tx(m.n), role: tx(m.r), ...this.photoObj(m.id, initials(tx(m.n))) }));
+        const realDM = (deptMembersS[dd.id] || []).filter(m => m.n !== 'Team Member');
+        const _wfEditable = !!st.admin || this.canEditTeam(dd.id);
+        const nomsList = ((st.wfNom || {})[dd.id] || []).map(x => ({ n: x.n, role: tx(x.r) || '', init: initials(x.n), isAdmin: !!st.admin, approve: this.approveWfNom(dd.id, x.id), reject: this.rejectWfNom(dd.id, x.id) }));
         const wf = [
-          { n: dx.leadN, role: t.teamLead, ...dx.leadPhoto },
-          { n: dx.depN, role: t.deputy, ...dx.depPhoto },
-          ...mem
+          { n: dx.leadN, role: dx.leadT || t.teamLead, ...dx.leadPhoto, noPhoto: !dx.leadPhoto.hasPhoto, isAdmin: _wfEditable, editCls: _wfEditable ? 'is-editable' : '', edit: _wfEditable ? this.openWfEdit(dd.id, 'lead', null) : null },
+          { n: dx.depN, role: dx.depT || t.deputy, ...dx.depPhoto, noPhoto: !dx.depPhoto.hasPhoto, isAdmin: _wfEditable, editCls: _wfEditable ? 'is-editable' : '', edit: _wfEditable ? this.openWfEdit(dd.id, 'dep', null) : null },
+          ...realDM.map(m => { const ph = this.photoObj(m.id, initials(tx(m.n))); return { n: tx(m.n), role: tx(m.r), ...ph, noPhoto: !ph.hasPhoto, isAdmin: _wfEditable, editCls: _wfEditable ? 'is-editable' : '', edit: _wfEditable ? this.openWfEdit(dd.id, 'member', m.id) : null }; })
         ];
-        const actions = (meta.actions || []).map((a, i) => ({ t: tx(a.t), o: a.o, s: a.s, sl: t.statuses[a.s], pill: STATUS[a.s].pill, pr: prLbl[a.pr], prCls: 'pr-' + a.pr, d: txd(a.d), dep: tx(a.dep), share: this.openShareAction(dd.id, i), nx: tx(a.nx), open: this.openAction(dd.id, i) }));
+        const actions = teamActionsOf(dd.id).map((a, i) => ({ t: tx(a.t), o: a.o, s: a.s, sl: tsLbl[tsk(a.s)], pill: tsPill[tsk(a.s)], pr: prLbl[a.pr], prCls: 'pr-' + a.pr, apL: apLbl[a.ap || 'nr'], apPill: apPill[a.ap || 'nr'], d: txd(a.d), dep: tx(a.dep), nx: tx(a.nx), chv: tx(a.ch) || '—',
+          hasMt: !!a.mt, openMt: a.mt ? (e => { if (e && e.stopPropagation) e.stopPropagation(); this.setState({ mtView: { title: tx(a.t), ...a.mt } }); }) : null, open: this.openAction(dd.id, i), editTask: this.openTaskEdit(dd.id, a._i) }));
+        const _mIdx = { Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5, Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11 };
+        const parseDue = (d) => { const m = /(\d{1,2})\s+([A-Za-z]{3})/.exec(String(d || '')); if (!m) return null; const mo = _mIdx[m[2].slice(0, 3)]; if (mo == null) return null; return mo * 31 + Number(m[1]); };
+        const rawA = teamActionsOf(dd.id);
+        let nearIdx = -1, nearBest = Infinity;
+        rawA.forEach((a, i) => { const v = parseDue(a.d); if (v != null && v < nearBest) { nearBest = v; nearIdx = i; } });
+        const nearestDue = nearIdx >= 0 ? txd(rawA[nearIdx].d) : dx.due;
+        const PREVIEW_N = 4;
+        const moreCount = Math.max(0, actions.length - PREVIEW_N);
+        const viewAllLabel = ar ? ('عرض جميع المهام (' + actions.length + ')') : ('View all ' + actions.length + ' tasks');
         const bRows = [
           [['Flights & tickets', 'الطيران والتذاكر'], 'AED 2,700,000'],
           [['Accommodation', 'الإقامة'], 'AED 1,450,000'],
@@ -1056,40 +1762,173 @@ class DashboardApp extends React.Component {
         ];
         const isBudget = dd.id === 'd5';
         const sel = st.sel || {};
-        const updItems = (dx.upd || []).map((txt, i) => ({ text: txt, sel: !!sel['upd:' + i], toggle: this.toggleSel('upd:' + i), rowCls: sel['upd:' + i] ? 'opbul selrow selrow-on' : 'opbul selrow', circleCls: sel['upd:' + i] ? 'selcircle on' : 'selcircle' }));
-        const chalItems = (dx.chal || []).map((txt, i) => ({ text: txt, sel: !!sel['chal:' + i], toggle: this.toggleSel('chal:' + i), rowCls: sel['chal:' + i] ? 'opbul selrow selrow-on' : 'opbul selrow', circleCls: sel['chal:' + i] ? 'selcircle on' : 'selcircle' }));
-        const wfSel = !!sel.wf;
-        const selCount = Object.keys(sel).length;
-        teamView = { ...dx, wf, actions, isBudget, budgetRows: isBudget ? bRows.map(r => ({ lab: tx(r[0]), val: r[1] })) : [],
-          updItems, chalItems, wfSel, wfToggle: this.toggleSel('wf'),
-          wfCircleCls: wfSel ? 'selcircle on' : 'selcircle', wfCardCls: wfSel ? 'card mt14 selcard-on' : 'card mt14',
-          commentEnabled: selCount > 0, commentBtnCls: selCount > 0 ? 'sharebtn' : 'sharebtn is-disabled',
-          comment: selCount > 0 ? this.openComment(dd.id) : (e) => { if (e && e.stopPropagation) e.stopPropagation(); },
-          commentTip: selCount > 0 ? '' : EX.selectToComment };
+        const updItems = (dx.upd || []).map(txt => ({ text: txt }));
+        const chalItems = (dx.chal || []).map(txt => ({ text: txt }));
+        const apprOv = (this.apprStoreFor(st.event).overrides['auto:' + dd.id]) || {};
+        const apprSt = apprOv.status || 'pending';
+        const apprStMeta = { pending: { l: ar ? 'قيد الاعتماد' : 'Pending Approval', pill: 'pg-a' }, approved: { l: ar ? 'معتمد' : 'Approved', pill: 'pg-g' }, rejected: { l: ar ? 'مرفوض' : 'Rejected', pill: 'pg-r' } }[apprSt];
+        const logStore = this.teamLogFor(dd.id);
+        const fmtLogD = ts => new Date(ts).toLocaleDateString(ar ? 'ar-AE' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+        const mkLog = (kind, baseItems, baseOnCard) => {
+          const entries = (logStore[kind] || []).slice().sort((a, b) => b.d - a.d);
+          const shown = entries.filter(en => !en.hide);
+          const bh = this.baseHideFor(dd.id, kind);
+          const visBase = baseItems.map((x, i) => ({ x, i })).filter(b => !bh.x.includes(b.i));
+          const cardBase = baseOnCard === false ? [] : visBase.filter(b => !bh.h.includes(b.i));
+          const items = [
+            ...shown.map(en => ({ text: en.t, dateL: fmtLogD(en.d), hasDate: true })),
+            ...cardBase.map(b => ({ text: b.x, dateL: '', hasDate: false }))
+          ];
+          const histCount = entries.length + visBase.length;
+          return {
+            items, hasItems: items.length > 0,
+            hasHist: histCount > 0,
+            histCount,
+            histLabel: (ar ? 'السجل' : 'History') + ' (' + histCount + ')',
+            openHist: this.openLogHist(dd.id, kind),
+            openAdd: this.openLogAdd(dd.id, kind),
+            adding: !!(st.logAdd && st.logAdd.kind === kind && st.logAdd.teamId === dd.id),
+            save: this.saveLogAdd
+          };
+        };
+        teamView = { ...dx, wf, actions, actionsPreview: [...actions].reverse().slice(0, PREVIEW_N), hasMoreActions: actions.length > PREVIEW_N, actionsCount: actions.length, moreCount, viewAllLabel, openTaskFull: this.openTaskFull(dd.id), isBudget, budgetRows: isBudget ? bRows.map(r => ({ lab: tx(r[0]), val: r[1] })) : [],
+          due: nearestDue, dueOpen: nearIdx >= 0 ? this.openAction(dd.id, nearIdx) : null, dueCls: nearIdx >= 0 ? 'due dueln' : 'due',
+          updItems, chalItems, sharePdf: this.openTeamPdf(dd.id), goUpdate: this.goUpdateFn(dx.n), apprStatusL: apprStMeta.l, apprStatusPill: apprStMeta.pill,
+          updLog: mkLog('upd', dx.upd || []), chalLog: mkLog('chal', dx.chal || []), apprLog: mkLog('appr', [dx.apprItem + ' — ' + dx.apprDec], false), nextLog: mkLog('next', [dx.nextAction], false),
+          kindBase: { upd: dx.upd || [], chal: dx.chal || [], appr: [dx.apprItem + ' — ' + dx.apprDec], next: [dx.nextAction] },
+          apprBaseShown: (() => { const b = this.baseHideFor(dd.id, 'appr'); return !b.x.includes(0) && !b.h.includes(0); })(),
+          nextBaseShown: (() => { const b = this.baseHideFor(dd.id, 'next'); return !b.x.includes(0) && !b.h.includes(0); })(),
+          openTaskAdd: this.openTaskAdd(dd.id), openApprAdd: this.openCreateApprFor(tx(dx.n)),
+          isAdmin: !!st.admin, canEdit: this.canEditTeam(dd.id), openAdd: this.openWfEdit(dd.id, 'member', null), hasNoms: nomsList.length > 0,
+          nomCountL: nomsList.length + ' ' + (ar ? (nomsList.length === 1 ? 'تعديل قيد الاعتماد' : 'تعديلات قيد الاعتماد') : (nomsList.length === 1 ? 'change pending approval' : 'changes pending approval')) };
       }
     }
     let actionModal = null;
-    if (st.actionKey) {
-      const parts = st.actionKey.split(':'); const meta = META[parts[0]] || { actions: [] }; const a = (meta.actions || [])[Number(parts[1])];
-      if (a) actionModal = { t: tx(a.t), o: a.o, d: txd(a.d), s: a.s, sl: t.statuses[a.s], pill: STATUS[a.s].pill, pr: prLbl[a.pr], prCls: 'pr-' + a.pr, up: tx(a.up), ch: tx(a.ch), dep: tx(a.dep), nx: tx(a.nx) };
+    let logHistModal = null;
+    if (st.logHistView && teamView) {
+      const hvKind = st.logHistView.kind;
+      const hvCanEdit = this.canEditTeam(st.logHistView.teamId);
+      const hvKindT = { upd: t.detUpdates, chal: t.detChallenges, appr: t.detApprovals, next: t.detNext }[hvKind];
+      const hvFmt = ts => new Date(ts).toLocaleDateString(ar ? 'ar-AE' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+      const hvEntries = ((this.teamLogFor(st.logHistView.teamId)[hvKind]) || []).slice().sort((a, b) => b.d - a.d);
+      const hvBase = (teamView.kindBase || {})[hvKind] || [];
+      const hvBh = this.baseHideFor(st.logHistView.teamId, hvKind);
+      const entryRows = hvEntries.map(en => ({
+        text: en.t, dateL: hvFmt(en.d),
+        hidden: !!en.hide, notHidden: !en.hide, rowCls: en.hide ? 'loghm-row loghm-hidden' : 'loghm-row',
+        showTitle: en.hide ? t.logShowL : t.logHideL,
+        toggleShow: this.toggleLogShow(st.logHistView.teamId, hvKind, en.d),
+        confirming: st.logDelKey === en.d, notConfirming: st.logDelKey !== en.d && hvCanEdit,
+        ask: this.askLogDel(en.d),
+        yes: this.confirmLogDel(st.logHistView.teamId, hvKind, en.d),
+        no: this.cancelLogDel
+      }));
+      const baseRows = hvBase.map((x, i) => ({ x, i })).filter(b => !hvBh.x.includes(b.i)).map(b => {
+        const bKey = 'b:' + hvKind + ':' + b.i;
+        const hid = hvBh.h.includes(b.i);
+        return {
+          text: b.x, dateL: '—',
+          hidden: hid, notHidden: !hid, rowCls: hid ? 'loghm-row loghm-hidden' : 'loghm-row',
+          showTitle: hid ? t.logShowL : t.logHideL,
+          toggleShow: this.toggleBaseShow(st.logHistView.teamId, hvKind, b.i),
+          confirming: st.logDelKey === bKey, notConfirming: st.logDelKey !== bKey && hvCanEdit,
+          ask: this.askLogDel(bKey),
+          yes: this.confirmBaseDel(st.logHistView.teamId, hvKind, b.i),
+          no: this.cancelLogDel
+        };
+      });
+      logHistModal = {
+        title: t.logHistT + ' — ' + hvKindT, team: teamView.n,
+        empty: entryRows.length + baseRows.length === 0,
+        rows: [...entryRows, ...baseRows]
+      };
     }
-    const eventDays = ACTIVE_EVENT.map((d, di) => ({
-      date: tx(d.date), day: tx(d.day), tagline: d.tagline ? tx(d.tagline) : '', hasTag: !!d.tagline,
+    let taskEditModal = null;
+    if (st.taskEdit) {
+      const te = st.taskEdit;
+      const cur = te.idx != null ? teamActionsOf(te.teamId).find(a => a._i === te.idx) : null;
+      taskEditModal = {
+        title: te.idx == null ? t.taskAddT : t.taskEditT,
+        canDelete: te.idx != null && !te.confirmDel, confirmDel: !!te.confirmDel,
+        t: cur ? tx(cur.t) : '', o: cur ? cur.o : '', d: cur ? (Array.isArray(cur.d) ? cur.d[0] : cur.d) : '', nx: cur ? tx(cur.nx) : '',
+        dIso: (() => { const s = cur ? (Array.isArray(cur.d) ? cur.d[0] : cur.d) : ''; if (!s || s === '—') return ''; const s2 = /\d{4}/.test(s) ? s : s + ' 2026'; const ts = Date.parse(s2); if (isNaN(ts)) return ''; const dt = new Date(ts); return dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0') + '-' + String(dt.getDate()).padStart(2, '0'); })(),
+        ownerOpts: (() => {
+          const names = [];
+          const push = (n) => { const v = (n == null ? '' : (Array.isArray(n) ? tx(n) : String(n))).trim(); if (v && v !== '—' && names.indexOf(v) === -1) names.push(v); };
+          const d0 = ALL_DEPTS.find(x => x.id === te.teamId);
+          const e0 = deptEdits[te.teamId] || {};
+          if (d0) { push(e0.leadN || d0.lead.n); push(e0.depN || d0.dep.n); }
+          const ct = Object.keys(st.eventTeams || {}).reduce((a, k) => a.concat((st.eventTeams || {})[k] || []), []).find(x => x && x.id === te.teamId);
+          if (ct) { push(e0.leadN || ct.leadN); push(e0.depN || ct.depN); }
+          (deptMembersS[te.teamId] || []).forEach(m => push(m.n));
+          let curO = cur ? (Array.isArray(cur.o) ? tx(cur.o) : (cur.o || '')) : '';
+          curO = (curO || '').trim(); if (curO === '—') curO = '';
+          if (curO && names.indexOf(curO) === -1) names.unshift(curO);
+          return [{ v: '', l: ar ? '— اختر المسؤول —' : '— Select owner —', sel: !curO }, ...names.map(n => ({ v: n, l: n, sel: n === curO }))];
+        })(),
+        statusOpts: ['n', 'p', 'a', 'g'].map(k => ({ v: k, l: tsLbl[k], sel: cur ? tsk(cur.s) === k : k === 'n' })),
+        prOpts: ['h', 'm', 'l'].map(k => ({ v: k, l: prLbl[k], sel: cur ? cur.pr === k : k === 'm' })),
+        apOpts: ['req', 'nr', 'pend'].map(k => ({ v: k, l: apLbl[k], sel: (cur ? (cur.ap || 'nr') : 'nr') === k })),
+        ...(() => { const mtCur = (cur && cur.mt) || {}; const mtOn = te.mtOpen != null ? te.mtOpen : !!(cur && cur.mt);
+          return { mtOn, toggleMt: () => this.setState(s => ({ taskEdit: { ...s.taskEdit, mtOpen: !mtOn } })),
+            mtRec: mtCur.rec || '', mtPur: mtCur.pur || '', mtLoc: mtCur.loc || '', mtDate: mtCur.d || '', mtTime: mtCur.tm || '' }; })()
+      };
+    }
+    let logAddModal = null;
+    if (st.logAdd && teamView) {
+      const kindT = { upd: t.detUpdates, chal: t.detChallenges, appr: t.detApprovals, next: t.detNext }[st.logAdd.kind];
+      logAddModal = { title: (ar ? 'إضافة إلى: ' : 'Add to: ') + kindT, team: teamView.n };
+    }
+    if (st.actionKey) {
+      const parts = st.actionKey.split(':'); const a = teamActionsOf(parts[0])[Number(parts[1])];
+      if (a) actionModal = { t: tx(a.t), o: a.o, d: txd(a.d), s: a.s, sl: tsLbl[tsk(a.s)], pill: tsPill[tsk(a.s)], pr: prLbl[a.pr], prCls: 'pr-' + a.pr, up: tx(a.up), ch: tx(a.ch), dep: tx(a.dep), nx: tx(a.nx) };
+    }
+    const _tlE = (st.tlEdits || {})[st.event] || {}; const _tlB = _tlE.blocks || {}; const _tlD = _tlE.days || {};
+    const _adminTl = !!st.admin && !!st.tlMode;
+    const eventDays = ACTIVE_EVENT.map((d, di) => { const _do = _tlD[di] || {}; return {
+      date: _do.date != null ? _do.date : tx(d.date), day: _do.day != null ? _do.day : tx(d.day),
+      tagline: _do.tagline != null ? _do.tagline : (d.tagline ? tx(d.tagline) : ''), hasTag: _do.tagline != null ? !!_do.tagline : !!d.tagline,
       iconEl: this.icon(d.icon), desc: d.desc ? tx(d.desc) : '', hasBlocks: (d.blocks || []).length > 0,
-      blocks: (d.blocks || []).map((b, bi) => ({ time: b.time, t: tx(b.t), sub: b.sub ? tx(b.sub) : '', hasSub: !!b.sub, iconEl: this.icon(b.icon), open: this.openBlock(di, bi) }))
-    }));
+      editable: _adminTl, editDay: this.openTlDay(di),
+      blocks: (d.blocks || []).map((b, bi) => { const _bo = _tlB[di + ':' + bi] || {}; return { time: _bo.time != null ? _bo.time : b.time, t: _bo.t != null ? _bo.t : tx(b.t), sub: _bo.sub != null ? _bo.sub : (b.sub ? tx(b.sub) : ''), hasSub: _bo.sub != null ? !!_bo.sub : !!b.sub, iconEl: this.icon(b.icon), editCls: _adminTl ? 'agblock-edit' : '', open: _adminTl ? this.openTlBlock(di, bi) : this.openBlock(di, bi) }; })
+    }; });
+    let tlBlockModal = null;
+    if (st.tlKey != null) { const p = st.tlKey.split(':'); const d = ACTIVE_EVENT[Number(p[0])]; const b = d && (d.blocks || [])[Number(p[1])]; if (b) { const _bo = _tlB[st.tlKey] || {}; tlBlockModal = { time: _bo.time != null ? _bo.time : b.time, t: _bo.t != null ? _bo.t : tx(b.t), sub: _bo.sub != null ? _bo.sub : (b.sub ? tx(b.sub) : ''), loc: _bo.loc != null ? _bo.loc : (b.loc ? tx(b.loc) : ''), team: _bo.team != null ? _bo.team : (b.team ? tx(b.team) : ''), notes: _bo.notes != null ? _bo.notes : (b.notes ? tx(b.notes) : '') }; } }
+    let tlDayModal = null;
+    if (st.tlDayKey != null) { const d = ACTIVE_EVENT[Number(st.tlDayKey)]; if (d) { const _do = _tlD[st.tlDayKey] || {}; tlDayModal = { date: _do.date != null ? _do.date : tx(d.date), day: _do.day != null ? _do.day : tx(d.day), tagline: _do.tagline != null ? _do.tagline : (d.tagline ? tx(d.tagline) : '') }; } }
     let agendaModal = null;
     if (st.agendaKey) {
       const parts = st.agendaKey.split(':'); const d = ACTIVE_EVENT[Number(parts[0])] || this.EVENT[Number(parts[0])]; const b = d && (d.blocks || [])[Number(parts[1])];
       if (b) agendaModal = { t: tx(b.t), date: tx(d.date), time: b.time, loc: tx(b.loc), team: tx(b.team), notes: tx(b.notes), addToCal: this.buildCalDownload((b.t && b.t[0]) || '', (d.date && d.date[0]) || '', b.time, (b.loc && b.loc[0]) || '', (b.notes && b.notes[0]) || '') };
     }
     const accS = st.acc || { wf: true };
+    let wfEditView = null;
+    if (st.wfEdit) {
+      const w = st.wfEdit;
+      const kindL = w.kind === 'lead' ? (ar ? 'قائد الفريق' : 'Team Lead') : w.kind === 'dep' ? (ar ? 'النائب' : 'Deputy') : (ar ? 'عضو الفريق' : 'Team Member');
+      const title = w.isNew ? (ar ? 'إضافة عضو' : 'Add Member') : (ar ? 'تعديل: ' : 'Edit: ') + kindL;
+      const initSrc = (w.name || '').trim();
+      const avStyle = w.photo ? 'background-image:url(' + w.photo + ');color:transparent;' : '';
+      const dir = st.empDir || [];
+      const q = (w.q || '').trim().toLowerCase();
+      const results = q ? dir.filter(x => ((x.eid || '') + ' ' + (x.n || '') + ' ' + (x.em || '') + ' ' + (x.ph || '')).toLowerCase().includes(q)).slice(0, 6)
+        .map(x => ({ n: x.n, meta: [x.eid, x.em, x.ph].filter(Boolean).join(' · ') || '—', pick: () => this.setState(s => ({ wfEdit: { ...s.wfEdit, name: x.n, em: x.em || '', ph: x.ph || '', gd: x.gd || '', eid: x.eid || '', q: '' } })) })) : [];
+      wfEditView = { title, name: w.name || '', role: w.role || '', avStyle, avInit: w.photo ? '' : (initials(initSrc) || '+'),
+        hasPhoto: !!w.photo, noPhoto: !w.photo, photo: w.photo || '', photoEl: w.photo ? React.createElement('img', { className: 'wfedit-avimg', src: w.photo, alt: '' }) : null,
+        hasDir: dir.length > 0, q: w.q || '', hasResults: results.length > 0, results,
+        accOn: !!w.acc, accYesCls: w.acc ? 'on' : '', accNoCls: w.acc ? '' : 'on', accP: w.accP || '',
+        ...(() => { const pq = (w.accPq ? (w.accP || '') : '').trim().toLowerCase();
+          const pres = pq ? dir.filter(x => ((x.eid || '') + ' ' + (x.n || '')).toLowerCase().includes(pq) && x.n !== (w.name || '')).slice(0, 6)
+            .map(x => ({ n: x.n, meta: [x.eid, x.em].filter(Boolean).join(' · ') || '—', pick: () => this.setState(s => ({ wfEdit: { ...s.wfEdit, accP: x.n, accPq: false } })) })) : [];
+          return { accPResults: pres, hasAccPResults: pres.length > 0 }; })(),
+        canDelete: w.kind === 'member' && !w.isNew };
+    }
     const mkAcc = (key) => ({ cls: accS[key] ? 'open' : '', toggle: this.toggleAcc(key) });
     let deptModal = null;
     if (st.deptIdx != null) {
       const dd = ALL_DEPTS.find(x => x.id === st.deptIdx);
       const dx = depEnrich(dd);
-      const force = (deptMembersS[dd.id] || []).map(m => ({ id: m.id, n: tx(m.n), role: tx(m.r), ...this.photoObj(m.id, initials(tx(m.n))), remove: this.removeDeptMember(dd.id, m.id), editName: this.editDeptMemberName(dd.id, m.id), editRole: this.editDeptMemberRole(dd.id, m.id) }));
+      const force = (deptMembersS[dd.id] || []).filter(m => m.n !== 'Team Member').map(m => ({ id: m.id, n: tx(m.n), role: tx(m.r), ...this.photoObj(m.id, initials(tx(m.n))), remove: this.removeDeptMember(dd.id, m.id), editName: this.editDeptMemberName(dd.id, m.id), editRole: this.editDeptMemberRole(dd.id, m.id) }));
       deptModal = { ...dx, force, noForce: force.length === 0, accWf: mkAcc('wf'), accUpd: mkAcc('upd'), accChal: mkAcc('chal'), accAppr: mkAcc('appr'), accNext: mkAcc('next'), addMember: this.addDeptMember(dd.id), edit: this.openDeptEdit(dd.id), exportSummary: () => this.exportSummary(dd.id) };
     }
     let deptEditModal = null;
@@ -1157,65 +1996,51 @@ class DashboardApp extends React.Component {
     }
     const evObj = st.event ? this.getEvent(st.event) : null;
     const eventName = evObj ? (ar ? evObj.ar : evObj.en) : '';
-    let shareModal = null;
-    if (st.shareKey) {
-      const sp = st.shareKey.split(':');
-      const dd = ALL_DEPTS.find(x => x.id === sp[1]);
+    let pdfReady = null;
+    if (st.pdfKey) {
+      const dd = ALL_DEPTS.find(x => x.id === st.pdfKey);
       if (dd) {
-        const dx = depEnrich(dd); const meta = META[dd.id] || { actions: [] };
-        const comment = st.shareComment || '';
-        const L = ar
-          ? { sec: '\u0627\u0644\u0642\u0633\u0645: \u0627\u0644\u0645\u062a\u062a\u0628\u0639 \u0627\u0644\u062a\u0634\u063a\u064a\u0644\u064a', ev: '\u0627\u0644\u0641\u0639\u0627\u0644\u064a\u0629', secv: '\u0627\u0644\u0645\u062a\u062a\u0628\u0639 \u0627\u0644\u062a\u0634\u063a\u064a\u0644\u064a', team: '\u0627\u0644\u0641\u0631\u064a\u0642', status: '\u0627\u0644\u062d\u0627\u0644\u0629', prog: '\u0627\u0644\u0646\u0633\u0628\u0629', upd: '\u0622\u062e\u0631 \u062a\u062d\u062f\u064a\u062b', items: '\u0627\u0644\u0628\u0646\u0648\u062f \u0627\u0644\u0645\u0641\u062a\u0648\u062d\u0629', action: '\u0627\u0644\u0625\u062c\u0631\u0627\u0621', owner: '\u0627\u0644\u0645\u0627\u0644\u0643', pr: '\u0627\u0644\u0623\u0648\u0644\u0648\u064a\u0629', due: '\u062a\u0627\u0631\u064a\u062e \u0627\u0644\u0627\u0633\u062a\u062d\u0642\u0627\u0642', cmt: '\u0627\u0644\u062a\u0639\u0644\u064a\u0642', ref: '\u0645\u0631\u062c\u0639 \u0627\u0644\u0645\u062a\u062a\u0628\u0639' }
-          : { sec: 'Section: Operational Tracker', ev: 'Event', secv: 'Operational Tracker', team: 'Team', status: 'Status', prog: 'Progress', upd: 'Last Updated', items: 'Open Items', action: 'Action', owner: 'Owner', pr: 'Priority', due: 'Due', cmt: 'Comment', ref: 'Tracker Reference' };
-        const ref = '#event=' + st.event + '&section=operational-tracker&team=' + dd.id;
-        const cmtLine = comment.trim() ? comment.trim() : '—';
-        let lines, rows, subject;
-        if (sp[0] === 'action') {
-          const a = (meta.actions || [])[Number(sp[2])];
-          const at = a ? tx(a.t) : '', owner = a ? a.o : '', sl = a ? t.statuses[a.s] : '', prv = a ? prLbl[a.pr] : '', due = a ? txd(a.d) : '';
-          lines = [eventName, L.sec, L.team + ': ' + dx.n, L.action + ': ' + at, '', L.status + ': ' + sl, L.owner + ': ' + owner, L.pr + ': ' + prv, L.due + ': ' + due, '', L.cmt + ':', cmtLine, '', L.ref + ':', ref];
-          rows = [{ k: L.ev, v: eventName }, { k: L.team, v: dx.n }, { k: L.action, v: at }, { k: L.status, v: sl }, { k: L.due, v: due }];
-          subject = (ar ? 'تعليق المتتبع: ' : 'Tracker Comment: ') + dx.n;
-        } else {
-          lines = [eventName, L.sec, L.team + ': ' + dx.n, '', L.status + ': ' + dx.sl, L.prog + ': ' + dx.p + '%', L.upd + ': ' + dx.u, L.items + ': ' + dx.openCount, '', L.cmt + ':', cmtLine, '', L.ref + ':', ref];
-          rows = [{ k: L.ev, v: eventName }, { k: (ar ? 'القسم' : 'Section'), v: L.secv }, { k: L.team, v: dx.n }, { k: L.status, v: dx.sl }, { k: L.prog, v: dx.p + '%' }, { k: L.upd, v: dx.u }, { k: L.items, v: String(dx.openCount) }];
-          subject = (ar ? 'تعليق المتتبع: ' : 'Tracker Comment: ') + dx.n;
-        }
-        const msg = lines.join('\n');
-        shareModal = { teamName: dx.n, pill: dx.pill, sl: dx.sl, rows, msg, comment,
-          wa: 'https://wa.me/?text=' + encodeURIComponent(msg),
-          mail: 'mailto:?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(msg),
-          copy: this.copyShareMsg(msg) };
-      }
-    }
-    let commentModal = null;
-    if (st.commentKey) {
-      const dd = ALL_DEPTS.find(x => x.id === st.commentKey);
-      if (dd) {
-        const dx = depEnrich(dd); const c = st.commentText || '';
+        const dx = depEnrich(dd);
+        const meta = META[dd.id] || { actions: [] };
+        const mem = (deptMembersS[dd.id] || []).filter(m => m.n !== 'Team Member').map(m => ({ n: tx(m.n), role: tx(m.r) }));
+        const wf = [{ n: dx.leadN, role: dx.leadT || t.teamLead }, { n: dx.depN, role: dx.depT || t.deputy }, ...mem];
+        const pdfActions = teamActionsOf(dd.id).map(a => ({ t: tx(a.t), o: a.o, sk: tsk(a.s), sl: tsLbl[tsk(a.s)], apL: apLbl[a.ap || 'nr'], apK: a.ap || 'nr', d: txd(a.d), nx: tx(a.nx), ch: tx(a.ch) || '—' }));
         const base = (typeof location !== 'undefined') ? location.href.split('#')[0] : '';
-        const link = base + '#event=' + st.event + '&team=' + dd.id;
-        const cmtLbl = ar ? 'التعليق' : 'Comment';
-        const pageLbl = ar ? 'صفحة الفريق' : 'Team page';
-        const teamLbl = ar ? 'الفريق' : 'Team';
-        const onLbl = ar ? 'التعليق على' : 'Commenting On';
-        const sel = st.sel || {};
-        const items = [];
-        if (sel.wf) items.push(ar ? 'فريق العمل' : 'Workforce section');
-        (dx.upd || []).forEach((u, i) => { if (sel['upd:' + i]) items.push(u); });
-        (dx.chal || []).forEach((ch, i) => { if (sel['chal:' + i]) items.push(ch); });
-        const onLines = items.length ? [onLbl + ':', ...items.map(x => '• ' + x), ''] : [];
-        const lines = [eventName, teamLbl + ': ' + dx.n, '', ...onLines, cmtLbl + ':', (c.trim() || '—'), '', pageLbl + ':', link];
-        const msg = lines.join('\n');
-        commentModal = { teamName: dx.n, eventName, comment: c, link, items, hasItems: items.length > 0, wa: 'https://wa.me/?text=' + encodeURIComponent(msg) };
+        const link = base + '#event=' + st.event + '&section=operational-tracker&team=' + dd.id;
+        const now = new Date();
+        let genAt; try { genAt = now.toLocaleString(ar ? 'ar' : 'en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }); } catch (e) { genAt = now.toISOString().slice(0, 16).replace('T', ' '); }
+        const evPeriod = evObj ? (Array.isArray(evObj.period) ? evObj.period[ar ? 1 : 0] : evObj.period) : '';
+        const evInit = evObj ? (evObj.en || '?').trim().charAt(0).toUpperCase() : '';
+        const evLogo = evObj ? evObj.logo : '';
+        const L = ar
+          ? { secv: 'المتتبع التشغيلي', generated: 'تم الإنشاء', leadership: 'قيادة الفريق', workforce: 'فريق العمل', updates: 'التحديثات', challenges: 'التحديات', approvals: 'الموافقات المعلقة', next: 'الخطوات التالية', progress: 'النسبة وتاريخ الاستحقاق', opTracker: 'المتتبع التشغيلي', action: 'الإجراء / المهمة', owner: 'المالك', status: 'الحالة', pr: 'الأولوية', due: 'تاريخ الاستحقاق', dependency: 'التبعية', nextAction: 'الإجراء التالي', approval: 'الاعتماد', nextSteps: 'الخطوات التالية', teamLead: 'قائد الفريق', deputy: 'النائب', team: 'الفريق', prog: 'النسبة', upd: 'آخر تحديث', delayFlag: 'متأخر عن الجدول', delayL: 'التأخير', openTracker: 'فتح صفحة المتتبع', waBody: 'تم إنشاء ملف PDF لصفحة الفريق للمراجعة.' }
+          : { secv: 'Operational Tracker', generated: 'Generated', leadership: 'Team Leadership', workforce: 'Workforce', updates: 'Updates', challenges: 'Challenges', approvals: 'Pending Approvals', next: 'Next Steps', progress: 'Progress & Due Date', opTracker: 'Operational Tracker', action: 'Action / Task', owner: 'Owner', status: 'Status', pr: 'Priority', due: 'Due', dependency: 'Dependency', nextAction: 'Next Action', approval: 'Approval', nextSteps: 'Next Steps', teamLead: 'Team Lead', deputy: 'Deputy', team: 'Team', prog: 'Progress', upd: 'Last Updated', delayFlag: 'Behind schedule', delayL: 'Delay', openTracker: 'Open Tracker Page', waBody: 'The team page PDF has been generated for review.' };
+        const cleanName = (evObj ? (evObj.en || 'Event') : 'Event').replace(/[^A-Za-z0-9]+/g, '_').replace(/^_|_$/g, '');
+        const cleanTeam = (String(dd.n[0] || 'Team')).replace(/[^A-Za-z0-9]+/g, '_').replace(/^_|_$/g, '');
+        const fname = cleanName + '_' + cleanTeam + '_Team_Page.pdf';
+        const data = { ar, L, n: dx.n, s: dx.s, sl: dx.sl, p: dx.p, u: dx.u, due: dx.due, delay: dx.delay,
+          leadN: dx.leadN, leadT: dx.leadT, leadInit: initials(dx.leadN), depN: dx.depN, depT: dx.depT, depInit: dx.depInit,
+          wf, actions: pdfActions, upd: dx.upd, chal: dx.chal,
+          apprItem: dx.apprItem, apprDec: dx.apprDec, apprOwner: dx.apprOwner, apprDue: dx.apprDue,
+          nextAction: dx.nextAction, nextWho: dx.nextWho, nextDue: dx.nextDue,
+          eventName, period: evPeriod, evInit, logo: evLogo, genAt, link, fname };
+        const html = this.teamPdfHtml(data);
+        const waMsg = eventName + '\n' + L.team + ': ' + dx.n + '\n\n' + L.waBody + '\n\n' + L.openTracker + ':\n' + link;
+        pdfReady = { fname,
+          download: this.downloadTeamPdf({ ar, html, fname }),
+          share: this.shareTeamPdfNative({ ar, shareTitle: eventName + ' — ' + dx.n, shareText: L.waBody, link }),
+          wa: 'https://wa.me/?text=' + encodeURIComponent(waMsg) };
       }
     }
     const eventPeriod = evObj ? (Array.isArray(evObj.period) ? evObj.period[ar ? 1 : 0] : evObj.period) : '';
     const eventLogo = evObj ? evObj.logo : '';
     const eventInit = evObj ? (evObj.en || '?').trim().charAt(0).toUpperCase() : '';
     const statusMeta = { active: { l: ar ? 'متتبع نشط' : 'Active Tracker', cls: 'pg-g' }, blank: { l: ar ? 'متتبع فارغ' : 'Blank Tracker', cls: 'pg-neutral' } };
-    const eventCards = this.allEvents().map(ev => ({ id: ev.id, logoEl: ev.logo ? React.createElement('img', { key: 'l', src: ev.logo, alt: '' }) : React.createElement('span', { className: 'evlogo-ph' }, (ev.en || '?').trim().charAt(0).toUpperCase()), name: ar ? ev.ar : ev.en, name2: '', date: ev.period ? (ar ? ev.period[1] : ev.period[0]) : '', statusL: statusMeta[ev.status].l, pillCls: statusMeta[ev.status].cls, open: this.openEvent(ev.id) }));
-    const mkLogo = (url, init, key) => url ? React.createElement('img', { key, src: url, alt: '' }) : init;
+    const _evSorted = this.allEvents().map(ev => ({ ev, start: this.parseEventStart(ev.period) })).sort((a, b) => { if (a.start && b.start) return (a.start.y - b.start.y) || (a.start.m - b.start.m) || (a.start.d - b.start.d); if (a.start) return -1; if (b.start) return 1; return 0; }).map(x => x.ev);
+    const eventCards = _evSorted.map(ev => ({ id: ev.id, logoEl: ev.logo ? React.createElement('img', { key: 'l', src: this.resolveAsset(ev.logo), alt: '' }) : React.createElement('span', { className: 'evlogo-ph' }, (ev.en || '?').trim().charAt(0).toUpperCase()), name: ar ? ev.ar : ev.en, name2: '', date: ev.period ? (ar ? ev.period[1] : ev.period[0]) : '', statusL: statusMeta[ev.status].l, pillCls: statusMeta[ev.status].cls, open: this.openEvent(ev.id), isAdmin: !!st.admin, editEv: this.openEditEvent(ev.id), delEv: this.askDelEvent(ev.id) }));
+    const editingEvent = (() => { if (!st.editEventId) return null; const ev = this.allEvents().find(x => x.id === st.editEventId); if (!ev) return null; return { en: ev.en, ar: ev.ar, period: ev.period ? ev.period[0] : '', owner: ev.owner || '' }; })();
+    const confirmDelEventName = (() => { if (!st.confirmDelEvent) return null; const ev = this.allEvents().find(x => x.id === st.confirmDelEvent); return ev ? (ar ? ev.ar : ev.en) : null; })();
+    const mkLogo = (url, init, key) => url ? React.createElement('img', { key, src: this.resolveAsset(url), alt: '' }) : init;
     const densityActive = st.density ? st.density : ((this.props.compact ?? false) ? 'compact' : 'comfortable');
     let customTeams = [];
     if (blankEvent) {
@@ -1226,10 +2051,127 @@ class DashboardApp extends React.Component {
       });
     }
 
+    // ===== APPROVALS DATA =====
+    const apprStore = this.apprStoreFor(st.event);
+    const apprPrMap = { r: 'h', a: 'm', g: 'l' };
+    const apprStatusMeta = {
+      pending: { l: ar ? 'قيد الاعتماد' : 'Pending Approval', pill: 'pg-a' },
+      approved: { l: ar ? 'معتمد' : 'Approved', pill: 'pg-g' },
+      rejected: { l: ar ? 'مرفوض' : 'Rejected', pill: 'pg-r' }
+    };
+    const fmtTs = (ts) => { if (!ts) return ''; try { return new Date(ts).toLocaleDateString(ar ? 'ar' : 'en-GB', { day: '2-digit', month: 'short' }); } catch (e) { return ''; } };
+    const fmtTsFull = (ts) => { if (!ts) return ''; try { return new Date(ts).toLocaleString(ar ? 'ar' : 'en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }); } catch (e) { return ''; } };
+    const autoAppr = ACTIVE_DEPTS.map(d => {
+      const dx = depEnrich(d); const id = 'auto:' + d.id; const ov = apprStore.overrides[id] || {};
+      return { id, source: 'auto', teamId: d.id, team: dx.n, title: dx.apprItem, desc: dx.apprDec, requestedBy: dx.apprOwner,
+        priority: ov.priority || apprPrMap[d.s] || 'm', due: dx.apprDue, status: ov.status || 'pending',
+        decidedAt: ov.decidedAt || null, reason: ov.reason || '', comments: ov.comments || [], updated: dx.u, attach: ov.attach || null, infoReq: ov.infoReq || null };
+    });
+    const manualAppr = (apprStore.manual || []).map(m => ({ id: m.id, source: 'manual', teamId: null, team: m.team, title: m.title, desc: m.desc,
+      requestedBy: m.requestedBy, priority: m.priority || 'm', due: m.due, status: m.status || 'pending',
+      decidedAt: m.decidedAt || null, reason: m.reason || '', comments: m.comments || [], updated: fmtTs(m.createdAt), attach: m.attach || null, infoReq: m.infoReq || null }));
+    const allAppr = [...manualAppr, ...autoAppr];
+    const nowMs = Date.now(); const weekAgo = nowMs - 7 * 864e5;
+    const apprPendingCount = allAppr.filter(a => a.status === 'pending').length;
+    const apprApprovedWeek = allAppr.filter(a => a.status === 'approved' && a.decidedAt && a.decidedAt >= weekAgo).length;
+    const apprRejected = allAppr.filter(a => a.status === 'rejected').length;
+    const apprHigh = allAppr.filter(a => a.status === 'pending' && a.priority === 'h').length;
+    const apprCards = allAppr.map(a => ({
+      id: a.id, title: a.title, team: a.team, requestedBy: a.requestedBy, desc: a.desc, due: a.due,
+      statusL: apprStatusMeta[a.status].l, statusPill: apprStatusMeta[a.status].pill,
+      prL: this.APPR_PR[a.priority] ? this.APPR_PR[a.priority][ar ? 1 : 0] : '', prCls: 'pr-' + a.priority,
+      updated: a.updated, cardCls: 'appr-card' + (a.status === 'approved' ? ' appr-approved' : a.status === 'rejected' ? ' appr-rejected' : ''),
+      sourceL: a.source === 'auto' ? (ar ? 'من صفحة الفريق' : 'From team page') : (ar ? 'طلب يدوي' : 'Manual request'),
+      open: this.openAppr(a.id),
+      hasAttach: !!(a.attach && a.attach.data), attachName: a.attach ? a.attach.name : '', attachUrl: a.attach ? a.attach.data : '',
+      hasInfoReq: !!(a.infoReq && a.infoReq.note) && a.status === 'pending', infoNote: a.infoReq ? a.infoReq.note : '',
+      cardReason: a.reason || '', hasCardReason: a.status === 'rejected' && !!a.reason,
+      canAct: canExec && a.status === 'pending',
+      noMode: !(st.apprCardAct && st.apprCardAct.id === a.id),
+      isRejectMode: !!(st.apprCardAct && st.apprCardAct.id === a.id && st.apprCardAct.mode === 'reject'),
+      isInfoMode: !!(st.apprCardAct && st.apprCardAct.id === a.id && st.apprCardAct.mode === 'info'),
+      approve: (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.approveAppr(a.id)(); },
+      startReject: this.startCardAct(a.id, 'reject'), startInfo: this.startCardAct(a.id, 'info'),
+      confirmReject: this.confirmCardReject(a.id), confirmInfo: this.confirmCardInfo(a.id)
+    }));
+    const hasAppr = apprCards.length > 0;
+    let apprModal = null;
+    if (st.apprKey) {
+      const a = allAppr.find(x => x.id === st.apprKey);
+      if (a) apprModal = {
+        id: a.id, title: a.title, team: a.team, event: eventName, requestedBy: a.requestedBy,
+        requestDate: a.source === 'manual' ? a.updated : (ar ? 'من المتتبع التشغيلي' : 'From Operational Tracker'), due: a.due, desc: a.desc,
+        statusL: apprStatusMeta[a.status].l, statusPill: apprStatusMeta[a.status].pill,
+        prL: this.APPR_PR[a.priority][ar ? 1 : 0], prCls: 'pr-' + a.priority,
+        isPending: a.status === 'pending', isApproved: a.status === 'approved', isRejected: a.status === 'rejected',
+        reason: a.reason, hasReason: !!a.reason, decidedAt: fmtTsFull(a.decidedAt), hasDecided: !!a.decidedAt,
+        hasAttach: !!(a.attach && a.attach.data), noAttach: !(a.attach && a.attach.data), attachName: a.attach ? a.attach.name : '', attachUrl: a.attach ? a.attach.data : '',
+        showActions: a.status === 'pending' && st.apprAction !== 'reject' && st.apprAction !== 'comment',
+        showDecided: a.status !== 'pending' && st.apprAction !== 'reject' && st.apprAction !== 'comment',
+        decidedBadge: a.status === 'approved' ? ((ar ? 'تم الاعتماد' : 'Approved') + (a.decidedAt ? ' · ' + fmtTsFull(a.decidedAt) : '')) : (a.status === 'rejected' ? ((ar ? 'تم الرفض' : 'Rejected') + (a.decidedAt ? ' · ' + fmtTsFull(a.decidedAt) : '')) : ''),
+        comments: (a.comments || []).map(c => ({ by: c.by, text: c.text, at: fmtTsFull(c.at) })), hasComments: (a.comments || []).length > 0,
+        approve: this.approveAppr(a.id), startReject: this.startApprAction('reject'), startComment: this.startApprAction('comment'),
+        confirmReject: this.confirmReject(a.id), confirmComment: this.confirmComment(a.id),
+        isRejectMode: st.apprAction === 'reject', isCommentMode: st.apprAction === 'comment', actInput: st.apprInput || ''
+      };
+    }
+
+    // ===== EVENT DESIGN DATA =====
+    const designStore = this.designStoreFor(st.event);
+    const designSeed = this.DESIGN_SEED[st.event] || {};
+    const dStatusMeta = { done: { l: ar ? 'مكتمل' : 'Complete', pill: 'pg-g' }, review: { l: ar ? 'قيد المراجعة' : 'In Review', pill: 'pg-a' }, inprogress: { l: ar ? 'قيد الإعداد' : 'In Progress', pill: 'pg-purple' }, empty: { l: ar ? 'لم يبدأ' : 'Not Started', pill: 'pg-neutral' } };
+    const fStatusMeta = { approved: { l: ar ? 'معتمد' : 'Approved', pill: 'pg-g' }, review: { l: ar ? 'مراجعة' : 'Review', pill: 'pg-a' }, draft: { l: ar ? 'مسودة' : 'Draft', pill: 'pg-neutral' }, uploaded: { l: ar ? 'مرفوع' : 'Uploaded', pill: 'pg-purple' } };
+    const designSections = this.DESIGN_SECTIONS.map(sec => {
+      const base = designSeed[sec.key] || {}; const saved = designStore[sec.key] || {};
+      const files = saved.files || base.files || [];
+      let status = saved.status || base.status || 'empty'; if (files.length === 0 && !(saved.status || base.status)) status = 'empty';
+      const owner = saved.owner || base.owner || ['—', '—'];
+      const updated = saved.updated || base.updated || '—';
+      const sm = dStatusMeta[status] || dStatusMeta.empty;
+      const gallery = files.map((f, fi) => ({ name: tx(f.name), type: f.type, date: txd(f.date), by: tx(f.by), statusL: (fStatusMeta[f.status] || fStatusMeta.draft).l, statusPill: (fStatusMeta[f.status] || fStatusMeta.draft).pill, ext: f.type, remove: this.deleteDesignFile(sec.key, fi), download: this.downloadDesignFile(f), view: this.viewDesignFile(f) }));
+      return { key: sec.key, title: ar ? sec.ar : sec.en, icon: this.designIcon(sec.icon), status, statusL: sm.l, statusPill: sm.pill,
+        owner: tx(owner), updated: txd(updated), count: files.length, countL: files.length + ' ' + (ar ? 'ملف' : (files.length === 1 ? 'file' : 'files')), hasFiles: files.length > 0, noFiles: files.length === 0,
+        gallery, previewFiles: gallery.slice(0, 3), pct: this.DESIGN_PCT[status] || 0,
+        open: this.openDesignSec(sec.key), upload: this.uploadDesign(sec.key), showStatus: status !== 'inprogress' };
+    });
+    const _designTeams = (st.event === 'agm') ? ['agm-2'] : ['d2', 'd3'];
+    const canUploadDesign = role === 'admin' || (role === 'inputter' && _designTeams.indexOf(_myStream0) !== -1) || (role === 'lead' && this._leadStreams().some(x => _designTeams.indexOf(x) !== -1));
+    const designOwner = tx(designSeed.owner || ['—', '—']);
+    const designReadiness = designSections.length ? Math.round(designSections.reduce((s, x) => s + x.pct, 0) / designSections.length) : 0;
+    const designAssets = designSections.reduce((s, x) => s + x.count, 0);
+    const designPendingAppr = designSections.filter(x => x.status === 'review').length;
+    const designUpdated = designSections.map(x => x.updated).filter(u => u && u !== '—').sort().slice(-1)[0] || '—';
+    let designModal = null;
+    if (st.designKey) { const s = designSections.find(x => x.key === st.designKey); if (s) designModal = { ...s }; }
+
+    // ===== CALENDAR DATA (landing) =====
+    const calStatusMeta = { active: { l: ar ? 'متتبع نشط' : 'Active Tracker', pill: 'pg-g', dot: 'var(--g)' }, blank: { l: ar ? 'متتبع فارغ' : 'Blank Tracker', pill: 'pg-neutral', dot: 'var(--acc)' } };
+    const calEvents = this.allEvents().map(ev => {
+      const start = this.parseEventStart(ev.period); const sm = calStatusMeta[ev.status] || calStatusMeta.blank;
+      return { id: ev.id, name: ar ? ev.ar : ev.en, period: ev.period ? (ar ? ev.period[1] : ev.period[0]) : (ar ? 'يُحدد لاحقاً' : 'To be confirmed'),
+        start, status: ev.status, statusL: sm.l, statusPill: sm.pill, dot: sm.dot, logo: ev.logo,
+        logoEl: ev.logo ? React.createElement('img', { key: ev.id, src: this.resolveAsset(ev.logo), alt: '' }) : React.createElement('span', { className: 'evlogo-ph' }, (ev.en || '?').trim().charAt(0).toUpperCase()),
+        open: this.openEvent(ev.id) };
+    });
+    const calMonth = st.calMonth == null ? 9 : st.calMonth; const calYear = st.calYear == null ? 2026 : st.calYear;
+    const MN_EN = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const MN_AR = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+    const calMonthLabel = (ar ? MN_AR[calMonth] : MN_EN[calMonth]) + ' ' + calYear;
+    const firstDow = new Date(calYear, calMonth, 1).getDay();
+    const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+    const calCells = [];
+    for (let i = 0; i < firstDow; i++) calCells.push({ blank: true, key: 'b' + i, cellCls: 'calcell calcell-blank', day: '', dot: 'transparent', evName: '', open: () => {} });
+    for (let day = 1; day <= daysInMonth; day++) {
+      const evs = calEvents.filter(e => e.start && e.start.y === calYear && e.start.m === calMonth && e.start.d === day);
+      calCells.push({ blank: false, key: 'd' + day, day: String(day), hasEv: evs.length > 0, dot: evs[0] ? evs[0].dot : 'transparent', evName: evs[0] ? evs[0].name : '', open: evs[0] ? evs[0].open : (() => {}), cellCls: 'calcell' + (evs.length ? ' calcell-ev' : '') });
+    }
+    const calDows = (ar ? ['أحد', 'إثن', 'ثلا', 'أرب', 'خمي', 'جمع', 'سبت'] : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']).map((d, i) => ({ d, key: 'w' + i }));
+    const upcomingEvents = calEvents.filter(e => e.start).sort((a, b) => (a.start.y - b.start.y) || (a.start.m - b.start.m) || (a.start.d - b.start.d)).concat(calEvents.filter(e => !e.start));
+
     return {
       dir: ar ? 'rtl' : 'ltr', dirCls: ar ? 'rtl' : '',
       enCls: ar ? '' : 'on', arCls: ar ? 'on' : '',
-      setEn: () => this.setState({ lang: 'en' }), setAr: () => this.setState({ lang: 'ar' }),
+      setEn: () => { this.persist('wef_lang', 'en'); this.setState({ lang: 'en' }); }, setAr: () => { this.persist('wef_lang', 'ar'); this.setState({ lang: 'ar' }); },
       t: { ...t, brAsOf: t.brAsOf(cdDays), ...EX },
       isLanding: st.event == null, inTracker: st.event != null,
       isWef, blankEvent, hasRich, genOverview: st.event === 'agm' && !!ovw, ovw, hasTeams: hasRich, emptyTracker: blankEvent && !hasRich, hasTimeline: hasRich, emptyTimeline: blankEvent && !hasRich,
@@ -1239,15 +2181,73 @@ class DashboardApp extends React.Component {
       showAddTeam: st.showAddTeam, openAddTeam: this.openAddTeam, closeAddTeam: this.closeAddTeam, createTeam: this.createTeam, importTeams: this.importTeams,
       streamlineOpts: (st.event === 'agm' ? this.AGM_DEPTS : this.DEPTS).map(d => ({ t: tx(d.n) })), statusFormOpts: ['g', 'a', 'r'].map(v => ({ v, t: t.statuses[v] })),
       showAddEvent: st.showAddEvent, openAddEvent: this.openAddEvent, closeAddEvent: this.closeAddEvent, createEvent: this.createEvent, pickNewLogo: this.pickNewLogo, newLogoName: st.newLogoName,
+      editingEvent, closeEditEvent: this.closeEditEvent, saveEventEdit: this.saveEventEdit, pickEditLogo: this.pickEditLogo, editLogoName: st.editLogoName,
+      confirmDelEventName, cancelDelEvent: this.cancelDelEvent, doDelEvent: this.doDelEvent,
+      pickApprFile: this.pickApprFile, apprFileName: st.apprFileName,
+      cancelCardAct: this.cancelCardAct, setCardInput: this.setCardInput, apprCardInput: st.apprCardInput || '',
+      apprInfoBtnL: ar ? 'طلب معلومات' : 'Request Info', apprInfoPh: ar ? 'ما المعلومات المطلوبة؟' : 'What information is needed?', apprInfoSendL: ar ? 'إرسال الطلب' : 'Send Request', apprInfoReqL: ar ? 'معلومات مطلوبة' : 'Info requested',
+      evEditT: ar ? 'تعديل الفعالية' : 'Edit Event', evDelT: ar ? 'حذف الفعالية' : 'Delete Event', evDelMsg: ar ? 'سيتم حذف هذه الفعالية ومتتبعها نهائياً. هل أنت متأكد؟' : 'This event and its tracker will be permanently removed. Are you sure?', evDelBtn: ar ? 'حذف' : 'Delete',
       densityComfort: densityActive === 'comfortable', densityCompact: densityActive === 'compact', toggleDensity: this.toggleDensity, densComfortCls: densityActive === 'comfortable' ? 'on' : '', densCompactCls: densityActive === 'compact' ? 'on' : '',
       accCls: { 'Federal Blue': '', 'Teal': 'acc-teal', 'Royal': 'acc-royal' }[this.props.accent] || '',
       densityCls: densityActive === 'compact' ? 'compact' : '',
       cdDays, cdHrs: String(cdHrs).padStart(2, '0'), cdMin: String(cdMin).padStart(2, '0'), cdSec: String(cdSec).padStart(2, '0'),
       navOverview: { label: ar ? 'النظرة التنفيذية' : 'Executive Overview', cls: st.page === 'overview' ? 'on' : '', go: this.go('overview') },
-      navDash: { label: ar ? 'المتتبع التشغيلي' : 'Operational Tracker', cls: st.page === 'dash' ? 'on' : '', go: this.go('dash') },
+      navDash: { label: ar ? 'المتتبع التشغيلي' : 'Operational Tracker', cls: pageEff === 'dash' ? 'on' : '', go: this.go('dash') },
+      navApprovals: { label: ar ? 'الاعتمادات' : 'Approvals', cls: st.page === 'approvals' ? 'on' : '', go: this.go('approvals'), badge: apprPendingCount > 0 ? String(apprPendingCount) : '' },
+      navDesign: { label: ar ? 'تصميم الفعالية' : 'Event Design', cls: st.page === 'design' ? 'on' : '', go: this.go('design') },
       navOrg: { label: ar ? 'فريق العمل' : 'Workforce', cls: st.page === 'org' ? 'on' : '', go: this.go('org') },
       navTimeline: { label: ar ? 'الجدول الزمني' : 'Timeline', cls: st.page === 'timeline' ? 'on' : '', go: this.go('timeline') },
+      navFeedback: (() => { const _s = evObj ? this.parseEventStart(evObj.period) : null;
+        const _done = _s ? (Date.now() > new Date(_s.y, _s.m, _s.d + 1).getTime()) : false;
+        this._fbUnlocked = _done || !!((st.fbOpen || {})[st.event]);
+        return { label: ar ? 'التقييم والملاحظات' : 'Feedback', cls: st.page === 'feedback' ? 'on' : '', go: this.go('feedback'), locked: !this._fbUnlocked }; })(),
+      isFeedback: st.page === 'feedback',
+      isHotel: pageEff === 'hotel',
+      navHotelShow: role === 'hotel' || !!st.admin,
+      navHotel: { label: ar ? 'الإقامة الفندقية' : 'Accommodation', cls: pageEff === 'hotel' ? 'on' : '', go: this.go('hotel') },
+      ...(() => { const ha = st.hotelAssign || {}; const rows = [];
+        ACTIVE_DEPTS.forEach(d => (deptMembersS[d.id] || []).forEach(m => { if (!m.acc) return; const asg = ha[m.id] || {};
+          rows.push({ n: tx(m.n), team: tx(d.n), em: m.em || '', ph: m.ph || '', contactLine: [m.em, m.ph].filter(Boolean).join('\n') || '—',
+            pref: m.accP || '', gender: asg.gender || m.gd || '', hotel: asg.hotel || '', conf: asg.conf || '', cin: asg.cin || '', cout: asg.cout || '',
+            setConf: this.setHotelField(m.id, 'conf'), setCin: this.setHotelField(m.id, 'cin'), setCout: this.setHotelField(m.id, 'cout'),
+            ...(() => { const mateV = (asg.mate != null && asg.mate !== '') ? asg.mate : (asg.mateRejected ? '' : (m.accP || ''));
+              return { mate: mateV, hasMate: mateV !== '', showMateActions: mateV !== '' && !asg.mateApproved, mateApproved: mateV !== '' && !!asg.mateApproved,
+                approveMate: () => { const ha = { ...(this.state.hotelAssign || {}) }; ha[m.id] = { ...(ha[m.id] || {}), mate: mateV, mateApproved: true }; this.persist('wef_hotel', ha); this.setState({ hotelAssign: ha }); },
+                ...(() => { const ready = !!asg.hotel;
+                  const fmtDT = v => { if (!v) return ''; const dte = new Date(v); return dte.toLocaleString(ar ? 'ar-AE' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }); };
+                  const msg = (ar
+                    ? 'عزيزي/عزيزتي ' + tx(m.n) + '،\n\nنؤكد حجز إقامتك لفعالية WEF:\n\nالفندق: ' + (asg.hotel || '—') + (asg.conf ? '\nرقم التأكيد: ' + asg.conf : '') + (asg.cin ? '\nتسجيل الدخول: ' + fmtDT(asg.cin) : '') + (asg.cout ? '\nتسجيل الخروج: ' + fmtDT(asg.cout) : '') + (mateV ? '\nشريك السكن: ' + mateV : '') + '\n\nمع تحيات فريق التنظيم — وزارة شؤون مجلس الوزراء'
+                    : 'Dear ' + tx(m.n) + ',\n\nYour accommodation booking for the WEF event has been confirmed:\n\nHotel: ' + (asg.hotel || '—') + (asg.conf ? '\nConfirmation No.: ' + asg.conf : '') + (asg.cin ? '\nCheck-in: ' + fmtDT(asg.cin) : '') + (asg.cout ? '\nCheck-out: ' + fmtDT(asg.cout) : '') + (mateV ? '\nRoommate: ' + mateV : '') + '\n\nBest regards,\nEvent Organising Team — Ministry of Cabinet Affairs');
+                  const fmtAt = ts => ts ? new Date(ts).toLocaleString(ar ? 'ar-AE' : 'en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+                  return { canNotify: ready, notNotify: !ready,
+                    sentWa: !!asg.sentWa, sentWaAt: (ar ? 'أُرسل ' : 'Sent ') + fmtAt(asg.sentWa),
+                    sentEm: !!asg.sentEm, sentEmAt: (ar ? 'أُرسل ' : 'Sent ') + fmtAt(asg.sentEm),
+                    previewWa: () => this.setState({ msgPrev: { mid: m.id, kind: 'wa', toN: tx(m.n), toC: m.ph || '—', msg } }),
+                    previewEm: () => this.setState({ msgPrev: { mid: m.id, kind: 'em', toN: tx(m.n), toC: m.em || '—', msg } }) }; })() }; })(),
+            mateTitle: m.accP ? ((ar ? 'المفضل: ' : 'Preferred: ') + m.accP) : '',
+            rejectMate: () => { const ha = { ...(this.state.hotelAssign || {}) }; ha[m.id] = { ...(ha[m.id] || {}), mate: '', mateRejected: true }; this.persist('wef_hotel', ha); this.setState({ hotelAssign: ha }); },
+            setGender: this.setHotelField(m.id, 'gender'), setHotel: this.setHotelField(m.id, 'hotel'), setRoom: this.setHotelField(m.id, 'room'), setMate: this.setHotelField(m.id, 'mate') }); }));
+        this._htRows = rows;
+        return { htRows: rows, htHas: rows.length > 0, htEmpty: rows.length === 0, htExport: this.htExport }; })(),
+      ...(() => { const nom = st.wfNom || {}; const out = [];
+        ACTIVE_DEPTS.forEach(d => (nom[d.id] || []).forEach(x => { const typeL = x.type === 'edit' ? (x.kind === 'lead' ? (ar ? 'تعديل قائد الفريق' : 'Lead edit') : x.kind === 'dep' ? (ar ? 'تعديل نائب القائد' : 'Deputy edit') : (ar ? 'تعديل عضو' : 'Member edit')) : (ar ? 'عضو جديد' : 'New member');
+          out.push({ n: x.n, role: (tx(x.r) || '—') + ' · ' + typeL, init: initials(x.n), teamN: tx(d.n), isAdmin: !!st.admin, approve: this.approveWfNom(d.id, x.id), reject: this.rejectWfNom(d.id, x.id) }); }));
+        return { execNoms: out, hasExecNoms: out.length > 0, execNomCountL: out.length + (ar ? ' قيد الاعتماد' : ' pending') }; })(),
+      ...(() => { const items = [];
+        if (st.admin || role === 'he') { allAppr.filter(a => a.status === 'pending').forEach(a => items.push({ title: (ar ? 'اعتماد مطلوب: ' : 'Approval needed: ') + (a.title || ''), sub: a.team || '', go: () => this.setState({ page: 'approvals', notifOpen: false }) })); }
+        if (st.admin) { ACTIVE_DEPTS.forEach(d => ((st.wfNom || {})[d.id] || []).forEach(x => items.push({ title: (ar ? 'تعديل فريق عمل: ' : 'Workforce change: ') + x.n, sub: tx(d.n), go: () => this.setState({ page: 'overview', notifOpen: false }) }))); }
+        if (!st.admin && role === 'inputter') { [(st.myStreams || {})[st.event]].filter(Boolean).forEach(id => { const d = ACTIVE_DEPTS.find(x => x.id === id); if (!d) return; ((st.wfNom || {})[id] || []).forEach(x => items.push({ title: (ar ? 'بانتظار اعتماد الإدارة: ' : 'Awaiting admin approval: ') + x.n, sub: tx(d.n), go: () => this.setState({ notifOpen: false }) })); }); }
+        return { notifItems: items, notifCount: items.length > 9 ? '9+' : String(items.length), notifHas: items.length > 0, notifEmpty: items.length === 0,
+          notifOpen: !!st.notifOpen, notifToggle: () => this.setState(s => ({ notifOpen: !s.notifOpen })) }; })(),
+      trkTable: (st.trkView || 'table') === 'table', trkCards: st.trkView === 'cards',
+      trkTableCls: (st.trkView || 'table') === 'table' ? 'on' : '', trkCardsCls: st.trkView === 'cards' ? 'on' : '',
+      trkSetTable: () => this.setState({ trkView: 'table' }), trkSetCards: () => this.setState({ trkView: 'cards' }),
+      fbLocked: !this._fbUnlocked, fbUnlocked: !!this._fbUnlocked, fbOpenNow: this.fbOpenNow, fbSubmit: this.fbSubmit,
+      fbTeamOpts: ACTIVE_DEPTS.map(d => ({ t: tx(d.n) })),
+      fbItems: ((st.feedback || {})[st.event] || []).map(f => ({ team: f.team, text: f.text, by: f.by, dateL: new Date(f.ts).toLocaleDateString(ar ? 'ar-AE' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) })),
+      fbHas: (((st.feedback || {})[st.event]) || []).length > 0, fbEmpty: (((st.feedback || {})[st.event]) || []).length === 0, fbExport: this.fbExport,
       navSubmit: { label: ar ? 'رفع التحديثات' : 'Submit Update', cls: st.page === 'submit' ? 'on' : '', go: this.go('submit') },
+      navMgmt: { label: ar ? 'إدارة الصلاحيات' : 'Management Access', cls: pageEff === 'mgmt' ? 'on' : '', go: this.go('mgmt') },
       navSettings: { label: ar ? 'الإعدادات' : 'Settings', cls: st.page === 'settings' ? 'on' : '', go: this.go('settings') },
       railClass: st.railOpen ? 'railopen' : '', toggleRail: () => this.setState({ railOpen: !st.railOpen }),
       adminBtnCls: st.admin ? 'ghost' : '', resetData: this.resetData,
@@ -1256,16 +2256,104 @@ class DashboardApp extends React.Component {
         { lab: t.kpis[3][0], num: t.kpis[3][1], sub: t.kpis[3][2], c: 'var(--a)', icbg: 'rgba(176,124,31,.13)', ic: '!' },
         { lab: t.kpis[4][0], num: t.kpis[4][1], sub: t.kpis[4][2], c: 'var(--r)', icbg: 'rgba(176,58,50,.1)', ic: '▲' }
       ],
-      isOverview: st.page === 'overview', isDash: st.page === 'dash', isTeams: st.page === 'teams', isOrg: st.page === 'org', isTimeline: st.page === 'timeline', isRisks: st.page === 'risks', isDecisions: st.page === 'decisions', isSubmit: st.page === 'submit', isReports: st.page === 'reports', isBrief: st.page === 'brief', isSettings: st.page === 'settings',
+      isOverview: pageEff === 'overview', isDash: pageEff === 'dash', isTeams: pageEff === 'teams', isOrg: pageEff === 'org', isTimeline: pageEff === 'timeline', isRisks: pageEff === 'risks', isDecisions: pageEff === 'decisions', isSubmit: pageEff === 'submit', isReports: pageEff === 'reports', isBrief: pageEff === 'brief', isSettings: pageEff === 'settings', isMgmt: pageEff === 'mgmt',
       admin: st.admin, notAdmin: !st.admin, adminLive: st.admin ? 'live' : '', adminIconCls: st.admin ? 'adot2' : '', adminBtnLabel: st.admin ? t.signOut : t.adminBtn, adminClick: this.adminClick,
+      role, isHE: role === 'he', isInputter: role === 'inputter', canExec,
+      roleTabs: [
+        { l: ar ? 'المشرف' : 'Admin', cls: role === 'admin' ? 'on' : '', go: this.setRole('admin') },
+        { l: ar ? 'فريق الإدخال' : 'Team', cls: role === 'inputter' ? 'on' : '', go: this.setRole('inputter') },
+        { l: ar ? 'قائد مسارات' : 'Stream Lead', cls: role === 'lead' ? 'on' : '', go: this.setRole('lead') },
+        { l: ar ? 'الفنادق' : 'Hotel', cls: role === 'hotel' ? 'on' : '', go: this.setRole('hotel') },
+        { l: ar ? 'معاليها' : 'H.E.', cls: role === 'he' ? 'on' : '', go: this.setRole('he') }
+      ],
+      showStreamPick: role === 'inputter' && !!st.event,
+      myStreamLabel: ar ? 'مساري' : 'My stream',
+      myStreamOpts: (() => { if (role !== 'inputter' || !st.event) return []; const src = ACTIVE_DEPTS.length ? ACTIVE_DEPTS : this.getEventTeams(st.event); const cur = (st.myStreams || {})[st.event] || ''; return [{ v: '', t: ar ? '— اختر المسار —' : '— Select stream —', sel: cur === '' }, ...src.map(d => ({ v: d.id, t: tx(d.n), sel: cur === d.id }))]; })(),
+      setMyStream: this.setMyStream,
+      showLeadPick: role === 'lead' && !!st.event,
+      leadOpts: this.STREAM_LEADS.map(l => ({ v: l.id, t: l.n, sel: l.id === (st.leadId || 'ali') })),
+      setLead: this.setLead,
       showLogin: st.showLogin, loginErr: st.loginErr, closeLogin: () => this.setState({ showLogin: false, loginErr: null }), doLogin: this.doLogin, stop: e => e.stopPropagation(),
       editModal: em, editStatusOpts, closeEdit: this.closeEdit, saveEdit: this.saveEditFn, teams, roleOpts, chiefPhoto, pmPhoto, submitWs: st.submitWs,
+      ...(() => {
+        const users = st.users || [];
+        const meEmail = (() => { try { return (sessionStorage.getItem('wef_auth_email') || '').toLowerCase(); } catch (e) { return ''; } })();
+        const roleL = { admin: ar ? 'مشرف' : 'Admin', inputter: ar ? 'فريق' : 'Team', lead: ar ? 'قائد مسار' : 'Stream Lead', hotel: ar ? 'فندق' : 'Hotel', he: ar ? 'معالي' : 'H.E.' };
+        const roleKeys = ['admin', 'inputter', 'lead', 'hotel', 'he'];
+        const streamNames = ACTIVE_DEPTS.map(d => tx(d.n));
+        const fmtLast = (ts) => ts ? new Date(ts).toLocaleString(ar ? 'ar-AE' : 'en-GB') : (ar ? 'لم يسجل الدخول بعد' : 'Never signed in');
+        const mgmtRows = users.map(u => { const isMe = !!meEmail && (u.email || '').toLowerCase() === meEmail; const canStream = !isMe && (u.role === 'lead' || u.role === 'inputter'); return {
+          init: initials(u.n), name: u.n, email: u.email, isMe, notMe: !isMe,
+          last: fmtLast(u.last), roleL: roleL[u.role] || u.role, roleCls: 'r-' + u.role,
+          roleOpts: roleKeys.map(k => ({ v: k, l: roleL[k], sel: k === u.role })),
+          canStream, noStream: !canStream,
+          streamOpts: [{ v: '', l: ar ? 'بدون مسار' : 'No streams assigned', sel: !u.stream }, ...streamNames.map(nm => ({ v: nm, l: nm, sel: nm === u.stream }))],
+          pass: u.pass || '', genPass: this.mgmtGenPass(u.id), typePass: this.mgmtTypePass(u.id), setRole: this.mgmtSetRole(u.id), setStream: this.mgmtSetStream(u.id)
+        }; });
+        return { mgmtRows, mgmtCount: String(users.length), mgmtT: {
+          title: ar ? 'إدارة الصلاحيات' : 'Management Access', sub: ar ? 'إدارة المستخدمين والأدوار والمسارات' : 'User, role & stream management',
+          users: ar ? 'المستخدمون' : 'Users', user: ar ? 'المستخدم' : 'User', last: ar ? 'آخر تسجيل دخول' : 'Last signed in',
+          role: ar ? 'الدور' : 'Role', change: ar ? 'تغيير الدور' : 'Change role', streams: ar ? 'المسارات' : 'Streams',
+          pass: ar ? 'كلمة المرور' : 'Password', passPh: ar ? 'كلمة مرور جديدة' : 'New password', gen: ar ? 'توليد' : 'Generate',
+          you: ar ? 'أنت' : 'You', noSelf: ar ? 'لا يمكنك تغيير دورك' : "You can't change your own role"
+        } };
+      })(),
+      needLogin: !st.authed, doLogin: this.doLogin, doSignOut: this.doSignOut,
+      loginErr: !!st.loginErr,
+      loginErrMsg: ar ? 'البريد الإلكتروني أو كلمة المرور غير صحيحة' : 'Invalid email or password',
+      loginDir: ar ? 'rtl' : 'ltr',
+      loginTitle: ar ? 'مركز قيادة فعاليات وزارة شؤون مجلس الوزراء' : 'MOCA Events Command Center',
+      loginTitle2: ar ? 'MOCA Events Command Center' : 'مركز قيادة فعاليات وزارة شؤون مجلس الوزراء',
+      loginDesc: ar ? 'سجّل الدخول بالبريد الإلكتروني وكلمة المرور. مستويات الوصول (مشرف، فريق، قائد مسار، فندق، معالي) يحددها مسؤول النظام.' : 'Sign in with your email and password. Access levels (Admin, Team, Stream Lead, Hotel, H.E.) are assigned by your administrator.',
+      loginEmailPh: ar ? 'البريد الإلكتروني' : 'Email',
+      loginPassPh: ar ? 'كلمة المرور' : 'Password',
+      loginBtnL: ar ? 'تسجيل الدخول' : 'Sign in',
+      loginFootL: ar ? 'وزارة شؤون مجلس الوزراء · الإمارات العربية المتحدة' : 'Ministry of Cabinet Affairs · United Arab Emirates',
+      loginHintL: ar ? 'حسابات تجريبية: admin@moca.gov.ae · team@ · lead@ · hotel@ · he@ (أي كلمة مرور)' : 'Demo accounts: admin@moca.gov.ae · team@ · lead@ · hotel@ · he@ (any password)',
+      signOutL: ar ? 'تسجيل الخروج' : 'Sign out',
       detailModal: dm, closeDetail: this.closeDetail, openGuide: this.openGuide,
+      wfEditView, closeWfEdit: this.closeWfEdit, saveWfEdit: this.saveWfEdit, deleteWfMember: this.deleteWfMember, pickWfEditPhoto: this.pickWfEditPhoto, setWfName: e => { const v = e.target.value; this.setState(s => ({ wfEdit: { ...s.wfEdit, name: v, q: v } })); }, setWfRole: this.setWfField('role'),
+      guideModal: st.guideModal, closeGuide: this.closeGuide, runGuide: this.runGuide,
+      guideLeadersCls: (st.guideOpts || { leaders: true }).leaders ? 'on' : '', guideMembersCls: (st.guideOpts || { members: true }).members ? 'on' : '', guideUpdatesCls: (st.guideOpts || {}).updates ? 'on' : '',
+      toggleGuideLeaders: this.toggleGuideOpt('leaders'), toggleGuideMembers: this.toggleGuideOpt('members'), toggleGuideUpdates: this.toggleGuideOpt('updates'),
       teamView, noTeamView: st.teamView == null, closeTeam: this.closeTeam,
-      actionModal, closeAction: this.closeAction, agendaModal, closeAgenda: this.closeAgenda, eventDays: hasRich ? eventDays : [],
-      shareModal, closeShare: this.closeShare, setShareComment: this.setShareComment,
-      commentModal, closeComment: this.closeComment, setCommentText: this.setCommentText,
-      depts: hasRich ? depts : [], deptModal, deptEditModal, closeDept: this.closeDept, closeDeptEdit: this.closeDeptEdit, saveDeptEdit: this.saveDeptEdit,
+      taskFull: !!(st.teamView != null && st.taskFull), notTaskFull: !st.taskFull, closeTaskFull: this.closeTaskFull, closeLogAdd: this.closeLogAdd,
+      actionModal, closeAction: this.closeAction, agendaModal, closeAgenda: this.closeAgenda, eventDays: hasRich ? eventDays : [], tlBlockModal, tlDayModal, closeTl: this.closeTl, saveTlBlock: this.saveTlBlock, saveTlDay: this.saveTlDay, tlMode: st.tlMode, tlAdmin: !!st.admin, toggleTlMode: this.toggleTlMode, tlModeLabel: st.tlMode ? (ar ? 'تم' : 'Done') : (ar ? 'تعديل الجدول' : 'Edit Timeline'),
+      logAddModal, saveLogAdd: this.saveLogAdd, logHistModal, closeLogHist: this.closeLogHist,
+      mtModal: (() => { const m = st.mtView; if (!m) return null; const iso = String(m.d || '').split('-'); const dEn = iso.length === 3 ? (+iso[2]) + ' ' + ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+iso[1] - 1] : (m.d || '');
+        return { title: m.title, rec: m.rec || '—', pur: m.pur || '—', loc: m.loc || '—', timing: dEn ? dEn + ' 2026' + (m.tm ? ' · ' + m.tm : '') : (m.tm || '—'),
+          addCal: this.buildCalDownload(m.title, dEn, m.tm, m.loc, (m.pur || '') + (m.rec ? '\n' + (ar ? 'المدعوون: ' : 'Recipients: ') + m.rec : '')) }; })(),
+      hasMtView: !!st.mtView, closeMtView: () => this.setState({ mtView: null }),
+      hasMsgPrev: !!st.msgPrev, closeMsgPrev: () => this.setState({ msgPrev: null }),
+      msgPrev: (() => { const p = st.msgPrev; if (!p) return null;
+        const dm = (deptMembersS ? Object.values(deptMembersS).flat() : []).find(x => x.id === p.mid) || {};
+        return { kindL: p.kind === 'wa' ? (ar ? 'معاينة رسالة واتساب' : 'WhatsApp Message Preview') : (ar ? 'معاينة البريد الإلكتروني' : 'Email Preview'),
+          toN: p.toN, toC: p.toC, msg: p.msg, sendL: p.kind === 'wa' ? (ar ? 'إرسال عبر واتساب' : 'Send via WhatsApp') : (ar ? 'إرسال البريد' : 'Send Email'),
+          send: () => { const ha = { ...(this.state.hotelAssign || {}) }; ha[p.mid] = { ...(ha[p.mid] || {}), [p.kind === 'wa' ? 'sentWa' : 'sentEm']: Date.now() }; this.persist('wef_hotel', ha);
+            if (p.kind === 'wa') { const num = String(dm.ph || p.toC || '').replace(/[^0-9]/g, ''); window.open('https://wa.me/' + num + '?text=' + encodeURIComponent(p.msg), '_blank'); }
+            else { const subj = ar ? 'تأكيد حجز الإقامة — فعالية WEF' : 'Accommodation Booking Confirmed — WEF Event'; window.open('mailto:' + (dm.em || p.toC || '') + '?subject=' + encodeURIComponent(subj) + '&body=' + encodeURIComponent(p.msg), '_self'); }
+            this.setState({ hotelAssign: ha, msgPrev: null }); } }; })(),
+      taskEditModal, closeTaskEdit: this.closeTaskEdit, saveTaskEdit: this.saveTaskEdit, askDeleteTask: this.askDeleteTask, cancelDeleteTask: this.cancelDeleteTask, confirmDeleteTask: this.confirmDeleteTask,
+      pdfReady, closePdf: this.closePdf,
+      toggleWfAdd: this.toggleWfAdd, toggleWfRemove: this.toggleWfRemove,
+      pickEmpDir: this.pickEmpDir, clearEmpDir: this.clearEmpDir,
+      empDirLoaded: (st.empDir || []).length > 0, empDirCountL: (st.empDir || []).length + (ar ? ' موظف' : ' employees'),
+      setWfSearch: e => { const v = e.target.value; this.setState(s => ({ wfEdit: { ...s.wfEdit, q: v } })); },
+      setWfAccYes: () => this.setState(s => ({ wfEdit: { ...s.wfEdit, acc: true } })),
+      setWfAccNo: () => this.setState(s => ({ wfEdit: { ...s.wfEdit, acc: false } })),
+      setWfAccP: e => { const v = e.target.value; this.setState(s => ({ wfEdit: { ...s.wfEdit, accP: v, accPq: true } })); },
+      isApprovals: pageEff === 'approvals', isDesign: pageEff === 'design',
+      taskReadiness, taskReadinessNote,
+      opsUpdates: this.OPS_UPDATES.map(u => ({ ic: this.icon(u.ic), n: tx(u.n), items: u.items.map(x => ({ txt: tx(x) })) })),
+      apprCards, hasAppr, apprTotalPending: apprPendingCount, apprApprovedWeek, apprRejected, apprHigh, noAppr: !hasAppr,
+      openCreateAppr: this.openCreateAppr, closeCreateAppr: this.closeCreateAppr, showCreateAppr: st.showCreateAppr, createApproval: this.createApproval, apprPrefillTeam: st.apprPrefillTeam || '',
+      apprPriorityOpts: [{ v: 'h', t: ar ? 'عالية' : 'High' }, { v: 'm', t: ar ? 'متوسطة' : 'Medium' }, { v: 'l', t: ar ? 'منخفضة' : 'Low' }],
+      apprTeamOpts: ACTIVE_DEPTS.map(d => ({ t: tx(d.n) })),
+      apprModal, closeAppr: this.closeAppr, setApprInput: this.setApprInput,
+      designSections, designOwner, designReadiness, designAssets, designPendingAppr, designUpdated, canUploadDesign,
+      designModal, closeDesignSec: this.closeDesignSec, designHasPending: designPendingAppr > 0,
+      calMonthLabel, calDows, calCells, upcomingEvents, calPrev: this.calShift(-1), calNext: this.calShift(1),
+      depts: hasRich ? depts : [], myDepts: hasRich ? myDepts : [], otherDepts: hasRich ? otherDepts : [], hasMyDepts: hasRich && myDepts.length > 0, noMyDepts: !(hasRich && myDepts.length > 0), deptModal, deptEditModal, closeDept: this.closeDept, closeDeptEdit: this.closeDeptEdit, saveDeptEdit: this.saveDeptEdit,
       goRisks: e => { e.preventDefault(); this.go('dash')(); },
       toast: st.toast,
       wsCards, dashChips, sevChips, riskCards, heat, milestones, decisions, attention,
@@ -1274,7 +2362,7 @@ class DashboardApp extends React.Component {
       deadlines: t.deadlines.map(d => ({ d: d[0], t: d[1], w: d[2] })),
       regRows: t.regRows.map(r => ({ lab: r[0], val: r[1], c: r[2] })),
       brOn: t.brOn.map(b => ({ s: b[0], r: b[1] })), brAttn: t.brAttn.map(b => ({ s: b[0], r: b[1] })), brRed: t.brRed.map(b => ({ s: b[0], r: b[1] })), brDec: t.brDec.map(b => ({ t: b[0], d: b[1] })),
-      wsOptions: (isWef ? this.WS : (st.event === 'agm' ? this.AGM_DEPTS : this.DEPTS)).map(w => ({ v: tx(w.n), t: tx(w.n), sel: tx(w.n) === st.submitWs })),
+      wsOptions: depts.map(w => ({ v: w.n, t: w.n, sel: w.n === st.submitWs })),
       statusOpts: t.statusOpts.map(s => ({ t: s })),
       repWOptions: [{ v: 'all', t: t.allWs }, ...this.WS.map(w => ({ v: tx(w.n), t: tx(w.n) }))],
       repSOptions: [{ v: 'all', t: t.allSt }, { v: 'g', t: t.stG }, { v: 'a', t: t.stA }, { v: 'r', t: t.stR }],
@@ -1285,443 +2373,53 @@ class DashboardApp extends React.Component {
       setRepO: e => this.setState({ repO: e.target.value }),
       setRepR: e => this.setState({ repR: e.target.value }),
       repRows, repShown: repRows.length + ' ' + t.shown,
+      taskDraftRows, hasTaskDrafts: taskDraftRows.length > 0, addTaskDraft: this.addTaskDraft,
       doPrint: () => window.print(),
       submitUpdate: e => {
         e.preventDefault();
         const f = new FormData(e.target);
-        const ws = f.get('ws') || (ar ? 'مسار العمل' : 'Workstream');
-        e.target.reset();
-        window.scrollTo(0, 0);
-        this.setState({ toast: this.T[this.state.lang].toastMsg(ws) });
-        clearTimeout(this._tt);
-        this._tt = setTimeout(() => this.setState({ toast: null }), 6000);
+        const gg = k => (f.get(k) || '').trim();
+        const wsName = gg('ws');
+        const target = depts.find(d => d.n === wsName);
+        if (!target) {
+          e.target.reset(); window.scrollTo(0, 0);
+          this.setState({ toast: this.T[this.state.lang].toastMsg(wsName) });
+          clearTimeout(this._tt); this._tt = setTimeout(() => this.setState({ toast: null }), 6000);
+          return;
+        }
+        const id = target.id;
+        const base = target;
+        const prevEdits = { ...(this.state.deptEdits || {}) };
+        const ov = { ...(prevEdits[id] || {}) };
+        ov.n = ov.n || base.n;
+        ov.leadN = ov.leadN || base.leadN; ov.leadT = ov.leadT || base.leadT;
+        ov.depN = ov.depN || base.depN; ov.depT = ov.depT || base.depT;
+        const lead = gg('lead'); if (lead) ov.leadN = lead;
+        const prog = gg('progress'); if (prog !== '') ov.p = Math.max(0, Math.min(100, Math.round(Number(prog) || 0)));
+        const si = this.T[this.state.lang].statusOpts.indexOf(gg('status')); if (si >= 0) ov.s = ['g', 'a', 'r'][si];
+        const achLines = [gg('ach'), gg('blockers')].join('\n').split('\n').map(x => x.trim()).filter(Boolean);
+        ov.upd = (achLines.length ? [...achLines, ...base.upd] : base.upd).join('\n');
+        const chalLines = gg('risks').split('\n').map(x => x.trim()).filter(Boolean);
+        ov.chal = (chalLines.length ? [...chalLines, ...base.chal] : base.chal).join('\n');
+        const appr = gg('budget'); ov.apprItem = appr ? appr : (ov.apprItem || base.apprItem); ov.apprDec = ov.apprDec || base.apprDec; ov.apprOwner = ov.apprOwner || base.apprOwner; ov.apprDue = ov.apprDue || base.apprDue;
+        const nxt = gg('approvals'); ov.nextAction = nxt ? nxt : (ov.nextAction || base.nextAction); ov.nextWho = ov.nextWho || base.nextWho; ov.nextDue = ov.nextDue || base.nextDue;
+        const dv = gg('date');
+        if (dv) { const dp = dv.split('-'); if (dp.length === 3) { const MO = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']; ov.u = String(+dp[2]).padStart(2, '0') + ' ' + (MO[(+dp[1]) - 1] || ''); } }
+        else { ov.u = ov.u || base.u; }
+        const deptEdits = { ...prevEdits, [id]: ov };
+        this.persist('wef_deptedits', deptEdits);
+        const nextTasks = { ...(this.state.tasks || {}) };
+        const drafts = (this.state.taskDrafts || []).filter(d => (d.task || '').trim());
+        if (drafts.length) {
+          const list = [...(nextTasks[id] || [])];
+          drafts.forEach(d => { const tt = d.task.trim(); const own = (d.owner || '').trim() || base.leadN; const dp = (d.dep || '').trim() || '—'; const nx = (d.nx || '').trim() || '—';
+            list.push({ t: [tt, tt], o: own, s: d.s || 'g', pr: d.pr || 'm', d: (d.due || '').trim() || '—', dep: [dp, dp], nx: [nx, nx] }); });
+          nextTasks[id] = list; this.persist('wef_tasks', nextTasks);
+        }
+        e.target.reset(); window.scrollTo(0, 0);
+        this.setState({ deptEdits, tasks: nextTasks, taskDrafts: [], page: 'dash', teamView: id, submitWs: null, toast: this.T[this.state.lang].toastMsg(wsName) });
+        clearTimeout(this._tt); this._tt = setTimeout(() => this.setState({ toast: null }), 6000);
       }
     };
   }
-
-  render() {
-    const v = this.renderVals();
-    const t = v.t;
-    const S = sty;
-    return (
-      <>
-        {/* ===================== LANDING ===================== */}
-        {v.isLanding && (
-          <div className={'landing ' + v.dirCls} dir={v.dir}>
-            <div className="landing-top">
-              <div className="lang">
-                <button className={'lbtn ' + v.enCls} onClick={v.setEn}>EN</button>
-                <button className={'lbtn ' + v.arCls} onClick={v.setAr}>العربية</button>
-              </div>
-            </div>
-            <div className="landing-inner">
-              <header className="landing-head">
-                <img className="moca-logo" src="/assets/logo-moca.png" alt="Ministry of Cabinet Affairs" />
-                <h1 className="landing-title" style={S('font-size:40px')}>{t.eventsTracker}</h1>
-                <p className="landing-sub" style={S('font-size:16px')}>{t.landingSub}</p>
-              </header>
-              <div className="evgrid">
-                {v.eventCards.map((ev) => (
-                  <div key={ev.id} className="evcard" onClick={ev.open} style={S('width:270px;height:310px')}>
-                    <div className="evlogo">{ev.logoEl}</div>
-                    <div className="evname">{ev.name}</div>
-                    <div className="evdate">{ev.date}</div>
-                    <button className="btn evbtn" onClick={ev.open}>{t.openTrackerL}</button>
-                  </div>
-                ))}
-                <div className="evcard evadd" onClick={v.openAddEvent}>
-                  <div className="evadd-plus">+</div>
-                  <div className="evname">{t.addEventT}</div>
-                  <button className="btn ghost evbtn" onClick={v.openAddEvent}>{t.createTrackerL}</button>
-                </div>
-              </div>
-            </div>
-            {v.showAddEvent && (
-              <div className="ovl" onClick={v.closeAddEvent}><div className="modal" onClick={v.stop}>
-                <div className="fx jb" style={S('align-items:flex-start;gap:14px')}><h2 className="mtitle">{t.addEventTitle || t.addEventT}</h2><button className="mclose" onClick={v.closeAddEvent}>×</button></div>
-                <form onSubmit={v.createEvent}>
-                  <div className="fgrid mt16"><div className="field"><label className="flab">{t.fEvName}</label><input className="inp" name="en" autoFocus /></div><div className="field"><label className="flab">{t.fEvNameAr}</label><input className="inp" name="ar" dir="rtl" /></div></div>
-                  <div className="field mt16"><label className="flab">{t.fEvLogo}</label><button type="button" className="logo-upload" onClick={v.pickNewLogo}><span className="logo-upload-ic">⬆</span><span>{t.fEvLogoHint}</span></button>{v.newLogoName && (<div className="mut fs12" style={S('margin-top:6px')}>{v.newLogoName}</div>)}</div>
-                  <div className="fgrid mt16"><div className="field"><label className="flab">{t.fEvPeriod}</label><input className="inp" name="period" /></div><div className="field"><label className="flab">{t.fEvOwner}</label><input className="inp" name="owner" /></div></div>
-                  <div className="fx gap8 mt24" style={S('justify-content:flex-end')}><button className="btn ghost" type="button" onClick={v.closeAddEvent}>{t.cancel}</button><button className="btn" type="submit">{t.createTrackerL}</button></div>
-                </form>
-              </div></div>
-            )}
-          </div>
-        )}
-
-        {/* ===================== TRACKER ===================== */}
-        {v.inTracker && (
-          <div className={'app ' + v.accCls + ' ' + v.densityCls + ' ' + v.dirCls + ' ' + v.railClass} dir={v.dir}>
-            <aside className="rail">
-              <button className="railtoggle" onClick={v.toggleRail} aria-label="Toggle menu"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" fill="none"></path></svg></button>
-              <div className="raillogo"><span className="railmark">{v.railLogoEl}</span><span className="rlt">{v.eventName}</span></div>
-              <nav className="railnav">
-                <button className={'navitem ' + v.navOverview.cls} onClick={v.navOverview.go}><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"></rect><rect x="14" y="3" width="7" height="5" rx="1.5"></rect><rect x="14" y="12" width="7" height="9" rx="1.5"></rect><rect x="3" y="16" width="7" height="5" rx="1.5"></rect></svg><span className="nvl">{v.navOverview.label}</span></button>
-                <button className={'navitem ' + v.navDash.cls} onClick={v.navDash.go}><svg viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11" strokeLinecap="round"></path><path d="M4.5 6l.01 0M4.5 12l.01 0M4.5 18l.01 0" strokeLinecap="round" strokeWidth="2.6"></path></svg><span className="nvl">{v.navDash.label}</span></button>
-                <button className={'navitem ' + v.navTimeline.cls} onClick={v.navTimeline.go}><svg viewBox="0 0 24 24"><path d="M12 4v16"></path><circle cx="12" cy="7" r="2.4"></circle><circle cx="12" cy="17" r="2.4"></circle><path d="M14.4 7H20M4 17h5.6" strokeLinecap="round"></path></svg><span className="nvl">{v.navTimeline.label}</span></button>
-                <button className={'navitem ' + v.navSubmit.cls} onClick={v.navSubmit.go}><svg viewBox="0 0 24 24"><path d="M12 16V5m0 0l-4 4m4-4l4 4" strokeLinecap="round" strokeLinejoin="round"></path><path d="M5 19h14" strokeLinecap="round"></path></svg><span className="nvl">{v.navSubmit.label}</span></button>
-              </nav>
-              <div className="railbottom">
-                <button className={'navitem ' + v.navSettings.cls} onClick={v.navSettings.go}><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 13.5a7.7 7.7 0 0 0 0-3l1.7-1.3-1.9-3.3-2 .8a7.7 7.7 0 0 0-2.6-1.5l-.3-2.1H10.7l-.3 2.1A7.7 7.7 0 0 0 7.8 5.7l-2-.8L3.9 8.2l1.7 1.3a7.7 7.7 0 0 0 0 3l-1.7 1.3 1.9 3.3 2-.8a7.7 7.7 0 0 0 2.6 1.5l.3 2.1h3.8l.3-2.1a7.7 7.7 0 0 0 2.6-1.5l2 .8 1.9-3.3z"></path></svg><span className="nvl">{v.navSettings.label}</span></button>
-              </div>
-            </aside>
-            <div className="maincol" style={{ background: "url('/assets/tracker-bg.png') center / cover no-repeat" }}>
-              <header className="topbar" style={S('background-color:#FFFFFFD1')}>
-                <div className="fx ac gap12" style={S('min-width:0')}>
-                  <button className="backev" onClick={v.backToEvents}>{t.backToEvents}</button>
-                  <span className="tbev-logo">{v.topLogoEl}</span>
-                  <div style={S('min-width:0')}><div className="tbrand">{v.eventName}</div><div className="tbperiod">{v.eventPeriod}</div></div>
-                </div>
-                <div className="fx ac gap12">
-                  {v.isWef && (<div className="cdmini"><span className="cdmn">{v.cdDays}</span><span className="cdml">{t.daysToWef}</span></div>)}
-                  <div className="lang"><button className={'lbtn ' + v.enCls} onClick={v.setEn}>EN</button><button className={'lbtn ' + v.arCls} onClick={v.setAr}>العربية</button></div>
-                  <button className={'adminbtn ' + v.adminLive} onClick={v.adminClick}><span className={v.adminIconCls}></span>{v.adminBtnLabel}</button>
-                </div>
-              </header>
-
-              {v.toast && (<div className="toast"><span className="pulse"></span>{v.toast}</div>)}
-
-              {v.showLogin && (
-                <div className="ovl" onClick={v.closeLogin}><div className="modal" onClick={v.stop}>
-                  <div className="fx jb" style={S('align-items:flex-start')}><div className="lockcircle">🔒</div><button className="mclose" onClick={v.closeLogin}>×</button></div>
-                  <h2 className="mtitle">{t.adminTitle}</h2><p className="psub" style={S('margin-top:6px')}>{t.adminSub}</p>
-                  <form onSubmit={v.doLogin}><div className="field mt16"><label className="flab">{t.password}</label><input className="inp" name="pwd" type="password" placeholder="••••" autoFocus /></div>
-                    {v.loginErr && (<div className="err">{v.loginErr}</div>)}
-                    <div className="fx gap8 mt16"><button className="btn" type="submit" style={S('flex:1')}>{t.signIn}</button><button className="btn ghost" type="button" onClick={v.closeLogin}>{t.cancel}</button></div></form>
-                </div></div>
-              )}
-
-              {v.editModal && (
-                <div className="ovl" onClick={v.closeEdit}><div className="modal wide" onClick={v.stop}>
-                  <div className="fx jb" style={S('align-items:flex-start')}><h2 className="mtitle">{t.editTitle}: {v.editModal.n}</h2><button className="mclose" onClick={v.closeEdit}>×</button></div>
-                  <form onSubmit={v.saveEdit}><div className="fgrid mt16">
-                    <div className="field"><label className="flab">{t.lead}</label><input className="inp" name="o" defaultValue={v.editModal.o} /></div>
-                    <div className="field"><label className="flab">{t.fProg}</label><input className="inp" name="p" type="number" min="0" max="100" defaultValue={v.editModal.p} /></div>
-                    <div className="field"><label className="flab">{t.fStatus}</label><select className="sel inp" name="s" defaultValue={v.editModal.s}>{v.editStatusOpts.map((o) => (<option key={o.v} value={o.v}>{o.t}</option>))}</select></div>
-                    <div className="field"><label className="flab">{t.due}</label><input className="inp" name="d" defaultValue={v.editModal.d} /></div>
-                  </div>
-                  <div className="field mt16"><label className="flab">{t.ach}</label><textarea className="inp ta" name="a" defaultValue={v.editModal.a}></textarea></div>
-                  <div className="fgrid mt16"><div className="field"><label className="flab">{t.blk}</label><textarea className="inp ta" name="b" defaultValue={v.editModal.b}></textarea></div>
-                  <div className="field"><label className="flab">{t.nxt}</label><textarea className="inp ta" name="x" defaultValue={v.editModal.x}></textarea></div></div>
-                  <div className="fx gap8 mt24" style={S('justify-content:flex-end')}><button className="btn ghost" type="button" onClick={v.closeEdit}>{t.cancel}</button><button className="btn" type="submit">{t.saveChanges}</button></div>
-                  </form></div></div>
-              )}
-
-              {v.detailModal && (
-                <div className="ovl" onClick={v.closeDetail}><div className="modal det2" onClick={v.stop}>
-                  <button className="mclose det2x" onClick={v.closeDetail}>×</button>
-                  <div className="det2head">
-                    <div><div className="detname">{v.detailModal.n}</div><div className="fx ac gap10 mt8"><span className={'pill ' + v.detailModal.pill}><span className="dot"></span>{v.detailModal.sl}</span><span className="mut fs12">{t.updated} {v.detailModal.u}</span></div></div>
-                    <div className="det2leads">
-                      <div className="det2lead"><div className={'det2av ' + v.detailModal.leadPhoto.cls} style={S(v.detailModal.leadPhoto.style)} onClick={v.detailModal.leadPhoto.pick}>{v.detailModal.leadPhoto.init}</div><div><div className="det2ln">{v.detailModal.o}</div><div className="det2lr">{t.teamLead}</div></div></div>
-                      <div className="det2lead"><div className="det2av">{v.detailModal.depInit}</div><div><div className="det2ln">{v.detailModal.dep}</div><div className="det2lr">{t.deputy}</div></div></div>
-                    </div>
-                  </div>
-                  <div className="det2sec"><div className="det2lab">{t.orgTitle}</div>
-                    <div className="det2force">{v.detailModal.force.map((p, i) => (<div key={i} className="det2person"><div className={'det2pav ' + p.cls} style={S(p.style)} onClick={p.pick}>{p.init}</div><div className="det2pn">{p.n}</div><div className="det2pr">{p.role}</div></div>))}</div>
-                  </div>
-                  <div className="detgrid">
-                    <div className="detsec"><div className="detlab">{t.detUpdates}</div><div className="detval">{v.detailModal.a}</div></div>
-                    <div className="detsec"><div className="detlab">{t.detChallenges}</div><div className="detval">{v.detailModal.b}</div></div>
-                    <div className="detsec"><div className="detlab">{t.detApprovals}</div><div className="detval">{v.detailModal.ap}</div></div>
-                    <div className="detsec"><div className="detlab">{t.detNext}</div><div className="detval">{v.detailModal.x}</div></div>
-                  </div>
-                  <div className="det2prog"><span className="eyebrow">{t.fProg}</span><div className="detbar"><span style={S('width:' + v.detailModal.p + '%')}></span></div><span className="fw7">{v.detailModal.p}%</span><span className="due" style={S('margin-inline-start:auto')}>{t.due} {v.detailModal.d}</span></div>
-                  <div className="det2sec"><div className="det2lab">{t.opTracker}</div>
-                    <div className="tl"><div className="tlline"></div>{v.detailModal.tracker.map((tk, i) => (<div key={i} className="tlitem tkitem"><span className={'tldot ' + tk.dotCls}></span><div className="tltitle">{tk.t}</div></div>))}</div>
-                  </div>
-                  <div className="det2foot"><button className="btn ghost" onClick={v.closeDetail}>{t.close}</button>{v.admin && (<button className="btn ghost" onClick={v.detailModal.edit}>{t.edit}</button>)}<button className="btn" onClick={v.detailModal.goUpdate}>{t.submitBtn}</button></div>
-                </div></div>
-              )}
-
-              {v.actionModal && (
-                <div className="ovl" onClick={v.closeAction}><div className="modal" onClick={v.stop}>
-                  <div className="fx jb" style={S('align-items:flex-start;gap:14px')}><h2 className="mtitle" style={S('flex:1')}>{v.actionModal.t}</h2><button className="mclose" onClick={v.closeAction}>×</button></div>
-                  <div className="fx ac gap10 mt8"><span className={'pill ' + v.actionModal.pill}><span className="dot"></span>{v.actionModal.sl}</span><span className={'prtag ' + v.actionModal.prCls}>{v.actionModal.pr}</span></div>
-                  <div className="amgrid">
-                    <div><div className="rlab">{t.owner}</div><div className="rtxt">{v.actionModal.o}</div></div>
-                    <div><div className="rlab">{t.dueDate}</div><div className="due" style={S('margin-top:6px')}>{v.actionModal.d}</div></div>
-                    <div className="amspan"><div className="rlab">{t.detUpdates}</div><div className="rtxt">{v.actionModal.up}</div></div>
-                    <div className="amspan"><div className="rlab">{t.detChallenges}</div><div className="rtxt">{v.actionModal.ch}</div></div>
-                    <div><div className="rlab">{t.thDependency}</div><div className="rtxt">{v.actionModal.dep}</div></div>
-                    <div><div className="rlab">{t.thNext}</div><div className="rtxt">{v.actionModal.nx}</div></div>
-                  </div>
-                  <div className="det2foot"><button className="btn" onClick={v.closeAction}>{t.close}</button></div>
-                </div></div>
-              )}
-
-              {v.agendaModal && (
-                <div className="ovl" onClick={v.closeAgenda}><div className="modal" onClick={v.stop}>
-                  <div className="fx jb" style={S('align-items:flex-start;gap:14px')}><h2 className="mtitle" style={S('flex:1')}>{v.agendaModal.t}</h2><button className="mclose" onClick={v.closeAgenda}>×</button></div>
-                  <div className="amgrid">
-                    <div><div className="rlab">{t.dateL}</div><div className="rtxt">{v.agendaModal.date}</div></div>
-                    <div><div className="rlab">{t.timeL}</div><div className="due" style={S('margin-top:6px')}>{v.agendaModal.time}</div></div>
-                    <div><div className="rlab">{t.locationL}</div><div className="rtxt">{v.agendaModal.loc}</div></div>
-                    <div><div className="rlab">{t.teamOwner}</div><div className="rtxt">{v.agendaModal.team}</div></div>
-                    <div className="amspan"><div className="rlab">{t.notesL}</div><div className="rtxt">{v.agendaModal.notes}</div></div>
-                  </div>
-                  <div className="det2foot" style={S('justify-content:space-between')}><button className="btn ghost" onClick={v.agendaModal.addToCal}>{t.addToCalL}</button><button className="btn" onClick={v.closeAgenda}>{t.close}</button></div>
-                </div></div>
-              )}
-
-              {v.shareModal && (
-                <div className="ovl" onClick={v.closeShare}><div className="modal sharemodal" onClick={v.stop}>
-                  <div className="fx jb" style={S('align-items:flex-start;gap:14px')}><h2 className="mtitle">{t.shareCommentTitle}</h2><button className="mclose" onClick={v.closeShare}>×</button></div>
-                  <div className="sharecard">
-                    <div className="fx jb ac gap8" style={S('margin-bottom:10px')}><span className="eyebrow">{t.sharePreviewL}</span><span className={'pill ' + v.shareModal.pill}><span className="dot"></span>{v.shareModal.sl}</span></div>
-                    <div className="sharerows">{v.shareModal.rows.map((r, i) => (<div key={i} className="sharerow"><span className="sharek">{r.k}</span><span className="sharev">{r.v}</span></div>))}</div>
-                  </div>
-                  <label className="flab mt16">{t.shareCommentL}</label>
-                  <textarea className="inp sharetext" rows={3} placeholder={t.shareCommentPh} value={v.shareModal.comment} onChange={v.setShareComment}></textarea>
-                  <label className="flab mt16">{t.shareMsgPreviewL}</label>
-                  <pre className="sharepreview">{v.shareModal.msg}</pre>
-                  <div className="shareactions">
-                    <button className="btn" onClick={v.shareModal.copy}>{t.copyMsgL}</button>
-                    <a className="btn ghost" href={v.shareModal.wa} target="_blank" rel="noopener">{t.shareWhatsappL}</a>
-                    <a className="btn ghost" href={v.shareModal.mail}>{t.shareEmailL}</a>
-                    <button className="btn ghost" onClick={v.closeShare}>{t.cancel}</button>
-                  </div>
-                </div></div>
-              )}
-
-              {v.commentModal && (
-                <div className="ovl" onClick={v.closeComment}><div className="modal commentmodal" onClick={v.stop}>
-                  <div className="fx jb" style={S('align-items:flex-start;gap:14px')}><h2 className="mtitle" style={S('flex:1')}>{t.shareCommentTitle}</h2><button className="mclose" onClick={v.closeComment}>×</button></div>
-                  <div className="cmt-ev">{v.commentModal.eventName}</div>
-                  <div className="cmt-team">{v.commentModal.teamName}</div>
-                  {v.commentModal.hasItems && (<>
-                    <label className="flab mt16">{t.commentingOnL}</label>
-                    <div className="cmt-on">{v.commentModal.items.map((it, i) => (<div key={i} className="cmt-on-row"><span className="cmt-on-dot"></span><span>{it}</span></div>))}</div>
-                  </>)}
-                  <label className="flab mt16">{t.yourCommentL}</label>
-                  <textarea className="inp sharetext" rows={3} placeholder={t.yourCommentPh} value={v.commentModal.comment} onChange={v.setCommentText}></textarea>
-                  <div className="shareactions">
-                    <button className="btn ghost" onClick={v.closeComment}>{t.cancel}</button>
-                    <a className="btn btn-wa" href={v.commentModal.wa} target="_blank" rel="noopener">{t.sendWhatsappL}</a>
-                  </div>
-                </div></div>
-              )}
-
-              {v.deptEditModal && (
-                <div className="ovl" onClick={v.closeDeptEdit}><div className="modal wide" onClick={v.stop}>
-                  <div className="fx jb" style={S('align-items:flex-start')}><h2 className="mtitle">{t.edit}: {v.deptEditModal.n}</h2><button className="mclose" onClick={v.closeDeptEdit}>×</button></div>
-                  <form onSubmit={v.saveDeptEdit}>
-                    <div className="fgrid mt16">
-                      <div className="field"><label className="flab">{t.orgTitle}</label><input className="inp" name="n" defaultValue={v.deptEditModal.n} /></div>
-                      <div className="field"><label className="flab">{t.fStatus}</label><select className="sel inp" name="s" defaultValue={v.deptEditModal.s}>{v.deptEditModal.statusOpts.map((o) => (<option key={o.v} value={o.v}>{o.t}</option>))}</select></div>
-                      <div className="field"><label className="flab">{t.lead}</label><input className="inp" name="leadN" defaultValue={v.deptEditModal.leadN} /></div>
-                      <div className="field"><label className="flab">{t.lead} — {t.roleLabel}</label><input className="inp" name="leadT" defaultValue={v.deptEditModal.leadT} /></div>
-                      <div className="field"><label className="flab">{t.deputy}</label><input className="inp" name="depN" defaultValue={v.deptEditModal.depN} /></div>
-                      <div className="field"><label className="flab">{t.deputy} — {t.roleLabel}</label><input className="inp" name="depT" defaultValue={v.deptEditModal.depT} /></div>
-                      <div className="field"><label className="flab">{t.updated}</label><input className="inp" name="u" defaultValue={v.deptEditModal.u} /></div>
-                    </div>
-                    <div className="field mt16"><label className="flab">{t.detUpdates}</label><textarea className="inp ta" name="upd" defaultValue={v.deptEditModal.updText}></textarea></div>
-                    <div className="field mt16"><label className="flab">{t.detChallenges}</label><textarea className="inp ta" name="chal" defaultValue={v.deptEditModal.chalText}></textarea></div>
-                    <div className="fgrid mt16">
-                      <div className="field"><label className="flab">{t.apprItem}</label><input className="inp" name="apprItem" defaultValue={v.deptEditModal.apprItem} /></div>
-                      <div className="field"><label className="flab">{t.reqDec}</label><input className="inp" name="apprDec" defaultValue={v.deptEditModal.apprDec} /></div>
-                      <div className="field"><label className="flab">{t.owner}</label><input className="inp" name="apprOwner" defaultValue={v.deptEditModal.apprOwner} /></div>
-                      <div className="field"><label className="flab">{t.dueDate}</label><input className="inp" name="apprDue" defaultValue={v.deptEditModal.apprDue} /></div>
-                      <div className="field"><label className="flab">{t.recAction}</label><input className="inp" name="nextAction" defaultValue={v.deptEditModal.nextAction} /></div>
-                      <div className="field"><label className="flab">{t.responsible}</label><input className="inp" name="nextWho" defaultValue={v.deptEditModal.nextWho} /></div>
-                    </div>
-                    <div className="field mt16" style={S('max-width:220px')}><label className="flab">{t.detNext} — {t.dueDate}</label><input className="inp" name="nextDue" defaultValue={v.deptEditModal.nextDue} /></div>
-                    <div className="fx gap8 mt24" style={S('justify-content:flex-end')}><button className="btn ghost" type="button" onClick={v.closeDeptEdit}>{t.cancel}</button><button className="btn" type="submit">{t.saveChanges}</button></div>
-                  </form></div></div>
-              )}
-
-              {v.admin && (<div className="editflag"><span className="adot2"></span>{t.adminMode}</div>)}
-
-              {v.showAddTeam && (
-                <div className="ovl" onClick={v.closeAddTeam}><div className="modal" onClick={v.stop}>
-                  <div className="fx jb" style={S('align-items:flex-start;gap:14px')}><h2 className="mtitle">{t.addTeamL}</h2><button className="mclose" onClick={v.closeAddTeam}>×</button></div>
-                  <form onSubmit={v.createTeam}>
-                    <div className="fgrid mt16"><div className="field"><label className="flab">{t.teamNameL}</label><input className="inp" name="en" list="streamlines" autoFocus /></div><div className="field"><label className="flab">{t.teamNameArL}</label><input className="inp" name="ar" dir="rtl" /></div></div>
-                    <datalist id="streamlines">{v.streamlineOpts.map((o, i) => (<option key={i} value={o.t}></option>))}</datalist>
-                    <div className="fgrid mt16"><div className="field"><label className="flab">{t.lead}</label><input className="inp" name="lead" /></div><div className="field"><label className="flab">{t.deputy}</label><input className="inp" name="dep" /></div></div>
-                    <div className="fgrid mt16"><div className="field"><label className="flab">{t.fStatus}</label><select className="sel inp" name="status">{v.statusFormOpts.map((o) => (<option key={o.v} value={o.v}>{o.t}</option>))}</select></div><div className="field"><label className="flab">{t.fProg}</label><input className="inp" name="p" type="number" min="0" max="100" placeholder="0–100" /></div></div>
-                    <div className="fgrid mt16"><div className="field"><label className="flab">{t.nextDue}</label><input className="inp" name="due" /></div><div className="field"><label className="flab">{t.updated}</label><input className="inp" name="u" /></div></div>
-                    <div className="fx gap8 mt24" style={S('justify-content:flex-end')}><button className="btn ghost" type="button" onClick={v.closeAddTeam}>{t.cancel}</button><button className="btn" type="submit">{t.addTeamL}</button></div>
-                  </form></div></div>
-              )}
-
-              {/* ===== OPERATIONAL TRACKER (dash) ===== */}
-              {v.isDash && (<>
-                {v.noTeamView && (
-                  <main className="pg wrap" data-screen-label="Operational Tracker">
-                    <div className="phead"><div><h1 className="ptitle">{t.dashTitle}</h1><p className="psub">{t.dashSub}</p></div>
-                      <div className="fx ac gap10 wrap">{v.admin && (<span className="pill pg-g"><span className="dot"></span>{t.editEnabled}</span>)}{v.blankAdmin && (<><button className="btn ghost" onClick={v.importTeams}>{t.importL}</button><button className="btn" onClick={v.openAddTeam}>{t.addTeamL}</button></>)}</div><button className="btn" onClick={v.openGuide}>{t.genGuide}</button></div>
-                    {v.hasCustomTeams && (<div className="deptgrid">{v.customTeams.map((tm) => (
-                      <div key={tm.id} className={'deptcard ' + tm.tcCls}>
-                        <div className="fx jb ac gap8"><div className="deptname">{tm.n}</div><div className="fx ac gap8">{v.admin && (<button className="editbtn" onClick={tm.remove}>{t.removeL}</button>)}<span className={'pill ' + tm.pill}><span className="dot"></span>{tm.sl}</span></div></div>
-                        <div className="deptleads"><div className="deptp"><div className="leadav">{tm.leadInit}</div><div className="deptpinfo"><div className="leadname">{tm.leadN}</div><div className="deptrole">{t.teamLead}</div></div></div><div className="deptp"><div className="leadav dep">{tm.depInit}</div><div className="deptpinfo"><div className="leadname">{tm.depN}</div><div className="deptrole">{t.deputy}</div></div></div></div>
-                        <div className="tcfoot2"><div className="tcprog"><div className="tcbar"><span style={S('width:' + tm.p + '%;background:' + tm.col)}></span></div><span className="tcpct">{tm.p}%</span></div></div>
-                        <div className="opcardfoot"><span className="mut fs12">{t.updated} {tm.u}</span></div>
-                      </div>
-                    ))}</div>)}
-                    <div className="deptgrid">{v.depts.map((tm) => (
-                      <div key={tm.id} className={'deptcard ' + tm.tcCls} onClick={tm.open}>
-                        <div className="fx jb ac gap8"><div className="deptname">{tm.n}</div><span className={'pill ' + tm.pill}><span className="dot"></span>{tm.sl}</span></div>
-                        <div className="deptleads">
-                          <div className="deptp"><div className={'leadav ' + tm.leadPhoto.cls} style={S(tm.leadPhoto.style)}>{tm.leadPhoto.init}</div><div className="deptpinfo"><div className="leadname">{tm.leadN}</div><div className="deptrole">{t.teamLead}</div></div></div>
-                          <div className="deptp"><div className={'leadav dep ' + tm.depPhoto.cls} style={S(tm.depPhoto.style)}>{tm.depPhoto.init}</div><div className="deptpinfo"><div className="leadname">{tm.depN}</div><div className="deptrole">{t.deputy}</div></div></div>
-                        </div>
-                        <div className="tcfoot2"><div className="tcprog"><div className="tcbar"><span style={S('width:' + tm.p + '%;background:' + tm.col)}></span></div><span className="tcpct">{tm.p}%</span></div></div>
-                        <div className="opcardfoot"><span className="opitems">{tm.openCount} {t.openItems}</span><span className="mut fs12">{t.updated} {tm.u}</span></div>
-                      </div>
-                    ))}</div>
-                    {v.showZero && (<div className="zero"><div className="zero-ic">▤</div><div className="zero-t">{t.emptyOps}</div><div className="zero-s">{t.zeroSub}</div>{v.admin && (<div className="zero-actions"><button className="btn" onClick={v.openAddTeam}>{t.addTeamL}</button><button className="btn ghost" onClick={v.importTeams}>{t.importL}</button></div>)}{v.notAdmin && (<div className="zero-locked">{t.zeroLocked}</div>)}</div>)}
-                  </main>
-                )}
-                {v.teamView && (
-                  <main className="pg wrap" data-screen-label="Team Detail">
-                    <button className="backbtn" onClick={v.closeTeam}>{t.backToTracker}</button>
-                    <div className={'card tvhead ' + v.teamView.tcCls}>
-                      <div className="tvhead-l">
-                        <div className="detname">{v.teamView.n}</div>
-                        <div className="fx ac gap10 mt8"><span className={'pill ' + v.teamView.pill}><span className="dot"></span>{v.teamView.sl}</span><span className="mut fs12">{t.updated} {v.teamView.u}</span><button className={v.teamView.commentBtnCls} title={v.teamView.commentTip} onClick={v.teamView.comment}><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="2.6"></circle><circle cx="6" cy="12" r="2.6"></circle><circle cx="18" cy="19" r="2.6"></circle><path d="M8.3 10.8l7.4-4.3M8.3 13.2l7.4 4.3"></path></svg>{t.commentL}</button></div>
-                      </div>
-                      <div className="det2leads">
-                        <div className="det2lead"><div className={'det2av ' + v.teamView.leadPhoto.cls} style={S(v.teamView.leadPhoto.style)} onClick={v.teamView.leadPhoto.pick}>{v.teamView.leadPhoto.init}</div><div><div className="det2ln">{v.teamView.leadN}</div><div className="det2lr">{t.teamLead}</div></div></div>
-                        <div className="det2lead"><div className={'det2av ' + v.teamView.depPhoto.cls} style={S(v.teamView.depPhoto.style)} onClick={v.teamView.depPhoto.pick}>{v.teamView.depPhoto.init}</div><div><div className="det2ln">{v.teamView.depN}</div><div className="det2lr">{t.deputy}</div></div></div>
-                      </div>
-                    </div>
-                    <div className={v.teamView.wfCardCls}><div className="det2lab selhead"><button className={v.teamView.wfCircleCls} onClick={v.teamView.wfToggle}></button><span>{t.orgTitle}</span></div>
-                      <div className="det2force">{v.teamView.wf.map((p, i) => (<div key={i} className="det2person"><div className={'det2pav ' + p.cls} style={S(p.style)} onClick={p.pick}>{p.init}</div><div className="det2pn">{p.n}</div><div className="det2pr">{p.role}</div></div>))}</div>
-                    </div>
-                    <div className="opblocks mt14">
-                      <div className="card opblock"><div className="detlab">{t.detUpdates}</div>{v.teamView.updItems.map((u, i) => (<div key={i} className={u.rowCls}><button className={u.circleCls} onClick={u.toggle}></button><span>{u.text}</span></div>))}</div>
-                      <div className="card opblock"><div className="detlab detlab-a">{t.detChallenges}</div>{v.teamView.chalItems.map((c, i) => (<div key={i} className={c.rowCls}><button className={c.circleCls + ' circle-a'} onClick={c.toggle}></button><span>{c.text}</span></div>))}</div>
-                      <div className="card opblock"><div className="detlab">{t.detApprovals}</div><div className="opbul"><span className="bd"></span><span><strong>{v.teamView.apprItem}</strong> — {v.teamView.apprDec}</span></div><div className="opmeta2">{t.owner}: {v.teamView.apprOwner} · {t.due} {v.teamView.apprDue}</div></div>
-                      <div className="card opblock"><div className="detlab">{t.detNext}</div><div className="opbul"><span className="bd"></span><span>{v.teamView.nextAction}</span></div><div className="opmeta2">{v.teamView.nextWho} · {t.due} {v.teamView.nextDue}</div></div>
-                    </div>
-                    <div className="card mt14 tvprog">
-                      <div className="tvprog-l"><div className="eyebrow">{t.fProg}</div><div className="det2prog2"><div className="detbar"><span style={S('width:' + v.teamView.p + '%')}></span></div><span className="fw7">{v.teamView.p}%</span></div></div>
-                      <div className="tvprog-r">
-                        <div className="tvchip"><div className="eyebrow">{t.fStatus}</div><span className={'pill ' + v.teamView.pill}><span className="dot"></span>{v.teamView.sl}</span></div>
-                        <div className="tvchip"><div className="eyebrow">{t.nextDue}</div><div className="due">{v.teamView.due}</div></div>
-                        {v.teamView.delay && (<div className="tvchip"><div className="eyebrow">{t.delayL}</div><span className="pill pg-r"><span className="dot"></span>{t.delayFlag}</span></div>)}
-                      </div>
-                    </div>
-                    {v.teamView.isBudget && (
-                      <div className="card mt14"><div className="det2lab">{t.budgetTitle}</div>
-                        {v.admin && (<div className="budgrid">{v.teamView.budgetRows.map((b, i) => (<div key={i} className="budrow"><span>{b.lab}</span><span className="due">{b.val}</span></div>))}</div>)}
-                        {v.notAdmin && (<div className="lockedbudget"><span className="lockedbudget-ic">🔒</span>{t.budgetLocked}</div>)}
-                      </div>
-                    )}
-                    <div className="card mt14"><div className="det2lab">{t.opTracker}</div>
-                      <div className="optable">
-                        <div className="opthead"><span>{t.thAction}</span><span>{t.owner}</span><span>{t.fStatus}</span><span>{t.thPriority}</span><span>{t.due}</span><span>{t.thNext}</span></div>
-                        {v.teamView.actions.map((a, i) => (<div key={i} className="optrow" onClick={a.open}><span className="fw6">{a.t}</span><span>{a.o}</span><span className={'pill ' + a.pill}><span className="dot"></span>{a.sl}</span><span className={'prtag ' + a.prCls}>{a.pr}</span><span className="due">{a.d}</span><span>{a.nx}</span></div>))}
-                      </div>
-                    </div>
-                  </main>
-                )}
-              </>)}
-
-              {/* ===== TIMELINE ===== */}
-              {v.isTimeline && (
-                <main className="pg wrap" data-screen-label="Event Timeline">
-                  <div className="phead"><div><h1 className="ptitle">{t.tlTitle}</h1><p className="psub">{t.tlSub}</p></div><div className="fx ac gap10 wrap">{v.isWef && (<div className="cdbox" style={S('border-color:var(--line);background:#fff')}><span className="cdn" style={S('color:var(--ink)')}>{v.cdDays}</span><span className="cdl" style={S('color:var(--mut)')}>{t.daysToWef}</span></div>)}{v.hasTimeline && (<button className="btn" onClick={v.doPrint}>{t.exportTimeline}</button>)}</div></div>
-                  <div className="agenda">{v.eventDays.map((d, di) => (
-                    <div key={di} className="agrow">
-                      <div className="agdate"><div className="agdatebig">{d.date}</div><div className="agday">{d.day}</div></div>
-                      <div className="agcard">
-                        <div className="agcardhead"><span className="aghicon">{d.iconEl}</span><span className="agtitle">{d.day}</span>{d.hasTag && (<span className="agtagline">{d.tagline}</span>)}</div>
-                        {d.hasBlocks && (<div className="agblocks">{d.blocks.map((b, bi) => (<div key={bi} className="agblock" onClick={b.open}><div className="agtime">{b.time}</div><div className="agbrow"><span className="agbicon">{b.iconEl}</span><div><div className="agbt">{b.t}</div>{b.hasSub && (<div className="agbsub">{b.sub}</div>)}</div></div></div>))}</div>)}
-                        {d.desc && (<div className="agdesc">{d.desc}</div>)}
-                      </div>
-                    </div>
-                  ))}</div>
-                  {v.emptyTimeline && (<div className="blankstate"><div className="blankstate-ic">◷</div><div className="blankstate-t">{t.emptyTimelineL}</div></div>)}
-                </main>
-              )}
-
-              {/* ===== SUBMIT UPDATE ===== */}
-              {v.isSubmit && (
-                <main className="pg wrap" data-screen-label="Updates Submission" style={S('max-width:960px')}>
-                  <div className="phead"><div><h1 className="ptitle">{t.sTitle}</h1><p className="psub">{t.sSub}</p></div></div>
-                  {v.submitWs && (<div className="prefill"><span className="pdot"></span><span>{t.prefillFor} <strong>{v.submitWs}</strong></span></div>)}
-                  <form className="card" style={S('padding:28px 32px')} onSubmit={v.submitUpdate}>
-                    <div className="fgrid">
-                      <div className="field"><label className="flab">{t.fWs}</label><select className="sel inp" name="ws" defaultValue={v.submitWs || ''}>{v.wsOptions.map((o, i) => (<option key={i} value={o.v}>{o.t}</option>))}</select></div>
-                      <div className="field"><label className="flab">{t.fLead}</label><input className="inp" name="lead" placeholder={t.phLead} /></div>
-                      <div className="field"><label className="flab">{t.fProg}</label><input className="inp" name="progress" type="number" min="0" max="100" placeholder="0–100" /></div>
-                      <div className="field"><label className="flab">{t.fStatus}</label><select className="sel inp" name="status">{v.statusOpts.map((o, i) => (<option key={i}>{o.t}</option>))}</select></div>
-                    </div>
-                    <div className="field mt16"><label className="flab">{t.fAch}</label><textarea className="inp ta" name="ach" placeholder={t.phAch}></textarea></div>
-                    <div className="fgrid mt16">
-                      <div className="field"><label className="flab">{t.fBlk}</label><textarea className="inp ta" name="blockers"></textarea></div>
-                      <div className="field"><label className="flab">{t.fRisks}</label><textarea className="inp ta" name="risks"></textarea></div>
-                      <div className="field"><label className="flab">{t.fBudget}</label><textarea className="inp ta" name="budget"></textarea></div>
-                      <div className="field"><label className="flab">{t.fAppr}</label><textarea className="inp ta" name="approvals"></textarea></div>
-                      <div className="field"><label className="flab">{t.fNext}</label><textarea className="inp ta" name="next"></textarea></div>
-                      <div className="field"><label className="flab">{t.fSupport}</label><textarea className="inp ta" name="support"></textarea></div>
-                    </div>
-                    <div className="fgrid mt16">
-                      <div className="field"><label className="flab">{t.fNotes}</label><input className="inp" name="notes" placeholder={t.phNotes} /></div>
-                      <div className="field"><label className="flab">{t.fDate}</label><input className="inp" name="date" type="date" defaultValue="2026-07-02" /></div>
-                    </div>
-                    <div className="fx jb ac mt24"><span className="mut" style={S('font-size:12px')}>{t.submitNote}</span><button className="btn" type="submit">{t.submitBtn}</button></div>
-                  </form>
-                </main>
-              )}
-
-              {/* ===== SETTINGS ===== */}
-              {v.isSettings && (
-                <main className="pg wrap" data-screen-label="Settings">
-                  <div className="phead"><div><h1 className="ptitle">{t.setTitle}</h1><p className="psub">{t.setSub}</p></div></div>
-                  <div className="setgrid">
-                    <div className="card"><div className="eyebrow">{t.setLang}</div><div className="lang lang-lg mt14"><button className={'lbtn ' + v.enCls} onClick={v.setEn}>English</button><button className={'lbtn ' + v.arCls} onClick={v.setAr}>العربية</button></div></div>
-                    <div className="card"><div className="eyebrow">{t.setAccess}</div><p className="setp">{t.setAccessTxt}</p><button className={'btn ' + v.adminBtnCls} onClick={v.adminClick}><span className={v.adminIconCls}></span>{v.adminBtnLabel}</button></div>
-                    <div className="card"><div className="eyebrow">{t.setDensity}</div><p className="setp">{t.setThemeTxt}</p><div className="lang lang-lg mt14"><button className={'lbtn ' + v.densComfortCls} onClick={v.toggleDensity}>{t.densComfort}</button><button className={'lbtn ' + v.densCompactCls} onClick={v.toggleDensity}>{t.densCompact}</button></div></div>
-                    <div className="card"><div className="eyebrow">{t.setData}</div><p className="setp">{t.setDataTxt}</p><button className="btn ghost" onClick={v.resetData}>{t.setReset}</button></div>
-                  </div>
-                </main>
-              )}
-
-              {/* ===== EXECUTIVE OVERVIEW ===== */}
-              {v.isOverview && (
-                <main className="pg wrap" data-screen-label="Executive Overview" style={S('position:relative')}>
-                  <div className="phead"><div><h1 className="ptitle">{v.eventName}</h1></div></div>
-                  {v.isWef && (<>
-                    <div className="card hero hero2" style={{ background: 'linear-gradient(135deg, #3165AB, #00142E)' }}>
-                      <div><div className="eyebrow">{t.readiness}</div><div className="heronum">56%</div><div className="herobar"><div className="herofill" style={S('width:56%')}></div></div></div>
-                      <div className="herocd"><div className="eyebrow">{t.cdTitle}</div><div className="cdbox cdbox-hero"><span className="cdn">{v.cdDays}</span><span className="cdl">{t.days}</span><span className="cdsep">·</span><span className="cdn">{v.cdHrs}</span><span className="cdl">{t.hrs}</span><span className="cdsep">·</span><span className="cdn">{v.cdMin}</span><span className="cdl">{t.min}</span><span className="cdsep">·</span><span className="cdn">{v.cdSec}</span><span className="cdl">{t.sec}</span></div><p className="heroP" style={S('font-size:12px')}>{t.cdEvt2}</p></div>
-                    </div>
-                    <div className="snap mt16">
-                      <div className="snaphead"><div className="eyebrow">{t.progStatus}</div><span className="snapct">{t.wsCount}</span></div>
-                      <div className="statusbar"><div className="seg seg-g" style={S('flex:7')}></div><div className="seg seg-a" style={S('flex:9')}></div><div className="seg seg-r" style={S('flex:2')}></div></div>
-                      <div className="statuslegend"><span className="lgi"><span className="lgd" style={S('background:var(--g)')}></span>{t.statuses.g}<b>7</b></span><span className="lgi"><span className="lgd" style={S('background:var(--a)')}></span>{t.statuses.a}<b>9</b></span><span className="lgi"><span className="lgd" style={S('background:var(--r)')}></span>{t.statuses.r}<b>2</b></span></div>
-                    </div>
-                    <div className="kgrid3 mt14">{v.kpis3.map((k, i) => (<div key={i} className="mcard"><div className="mhead"><div className="mlab">{k.lab}</div><div className="micon" style={S('background:' + k.icbg + ';color:' + k.c)}>{k.ic}</div></div><div className="mnum" style={S('color:' + k.c)}>{k.num}</div><div className="msub">{k.sub}</div></div>))}</div>
-                  </>)}
-                  {v.genOverview && (<>
-                    <div className="card hero hero2">
-                      <div><div className="eyebrow">{t.ovReadiness}</div><div className="heronum">{v.ovw.readiness}%</div><div className="herobar"><div className="herofill" style={S('width:' + v.ovw.readiness + '%')}></div></div><p className="heroP" style={S('font-size:12px;margin-top:12px')}>{t.ovHeroNote}</p></div>
-                      <div className="herocd"><div className="eyebrow">{t.progStatus}</div>
-                        <div className="statusbar" style={S('margin-top:12px')}><div className="seg seg-g" style={S('flex:' + v.ovw.segG)}></div><div className="seg seg-a" style={S('flex:' + v.ovw.segA)}></div><div className="seg seg-r" style={S('flex:' + v.ovw.segR)}></div></div>
-                        <div className="statuslegend"><span className="lgi"><span className="lgd" style={S('background:var(--g)')}></span>{t.statuses.g}<b>{v.ovw.g}</b></span><span className="lgi"><span className="lgd" style={S('background:var(--a)')}></span>{t.statuses.a}<b>{v.ovw.a}</b></span><span className="lgi"><span className="lgd" style={S('background:var(--r)')}></span>{t.statuses.r}<b>{v.ovw.r}</b></span></div>
-                        <p className="heroP" style={S('font-size:11.5px;margin-top:12px')}>{t.ovAgmNote}</p></div>
-                    </div>
-                    <div className="kgrid3 mt16">{v.ovw.kpis.map((k, i) => (<div key={i} className="mcard"><div className="mhead"><div className="mlab">{k.lab}</div></div><div className="mnum" style={S('color:' + k.col)}>{k.val}</div><div className="msub">{k.sub}</div></div>))}</div>
-                    <div className="card mt16"><div className="fx jb ac gap8"><div><div className="eyebrow">{t.ovAttnTitle}</div><p className="psub" style={S('margin:4px 0 0')}>{t.ovAttnSubT}</p></div></div>
-                      <div className="ovattn mt14">{v.ovw.attention.map((it, i) => (<div key={i} className={'ovattn-row ' + it.tcCls} onClick={it.open}><div className="ovattn-main"><div className="ovattn-n">{it.n}</div><div className="ovattn-item">{it.item}</div></div><div className="ovattn-meta"><span className={'pill ' + it.pill}><span className="dot"></span>{it.sl}</span><span className="mut fs12">{t.owner}: {it.owner}</span></div></div>))}</div>
-                    </div>
-                  </>)}
-                  {v.emptyTracker && (<div className="blankstate"><div className="blankstate-ic">◔</div><div className="blankstate-t">{t.emptyUpdates}</div><div className="blankstate-s">{t.blankOverviewSub}</div>{v.blankAdmin && (<div style={S('margin-top:18px')}><button className="btn" onClick={v.openAddTeam}>{t.addTeamL}</button></div>)}</div>)}
-                </main>
-              )}
-
-              <footer className="foot"><span style={S('letter-spacing:.06em;font-weight:600;text-align:center')}>{t.foot3}</span></footer>
-            </div>
-          </div>
-        )}
-      </>
-    );
-  }
-
 }
-
-export default DashboardApp;

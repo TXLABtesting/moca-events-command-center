@@ -2,26 +2,27 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-// Database seed.
+// Database seed — the IT build ships with ZERO content.
 //
-// The IT build ships with ZERO fake data: this seed only provisions an initial
-// administrator (so someone can sign in and start creating events) when
-// SEED_ADMIN_EMAIL is set. It creates no events, teams, or sample content.
-//
-// The demo build does not need this — its fake data lives client-side in the
-// dashboard's seed arrays.
+// The only thing seeded is the first administrator(s), so someone can sign in
+// with SSO and start creating events, teams and users:
+//   SEED_ADMIN_EMAIL="first.admin@moca.gov.ae,second.admin@moca.gov.ae"
+// Re-running is safe: existing users keep their data and are promoted to ADMIN.
 async function main() {
-  const email = process.env.SEED_ADMIN_EMAIL;
-  if (!email) {
-    console.log('[seed] No SEED_ADMIN_EMAIL set — nothing to seed (IT build starts empty).');
+  const raw = process.env.SEED_ADMIN_EMAIL || '';
+  const emails = raw.split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
+  if (!emails.length) {
+    console.log('[seed] SEED_ADMIN_EMAIL not set — nothing to seed (no content is ever seeded).');
     return;
   }
-  const user = await prisma.user.upsert({
-    where: { email },
-    update: { role: 'ADMIN' },
-    create: { email, name: 'Administrator', role: 'ADMIN' },
-  });
-  console.log(`[seed] Ensured admin user: ${user.email}`);
+  for (const email of emails) {
+    const user = await prisma.user.upsert({
+      where: { email },
+      update: { role: 'ADMIN', active: true },
+      create: { email, name: 'Administrator', role: 'ADMIN', active: true },
+    });
+    console.log(`[seed] Administrator ready: ${user.email}`);
+  }
 }
 
 main()

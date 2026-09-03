@@ -1,0 +1,34 @@
+# MOCA Events Command Center — one-command staging/production stack
+#   cp .env.it .env   → fill values →   docker compose up -d --build
+# The app applies migrations and seeds the first admin on every start.
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: moca
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-CHANGE_ME}
+      POSTGRES_DB: moca_events
+    volumes:
+      - moca_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U moca -d moca_events"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      # Overrides the DATABASE_URL in .env so it points at the bundled database.
+      DATABASE_URL: postgresql://moca:${DB_PASSWORD:-CHANGE_ME}@db:5432/moca_events?schema=public
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  moca_pgdata:

@@ -1,0 +1,1054 @@
+<sc-if value="{{isLanding}}" hint-placeholder-val="{{true}}">
+<div class="landing {{dirCls}}" dir="{{dir}}">
+<div class="landing-top" style="gap:10px;align-items:center"><div class="lang"><button class="lbtn {{enCls}}" sc-camel-on-click="{{setEn}}">EN</button><button class="lbtn {{arCls}}" sc-camel-on-click="{{setAr}}">العربية</button></div><div class="lang"><sc-for list="{{roleTabs}}" as="rt" hint-placeholder-count="3"><button class="lbtn {{rt.cls}}" sc-camel-on-click="{{rt.go}}">{{rt.l}}</button></sc-for></div></div>
+<sc-if value="{{showLogin}}" hint-placeholder-val="{{false}}">
+<div class="ovl" sc-camel-on-click="{{closeLogin}}"><div class="modal" sc-camel-on-click="{{stop}}">
+<div class="fx jb" style="align-items:flex-start"><div class="lockcircle">🔒</div><button class="mclose" sc-camel-on-click="{{closeLogin}}">×</button></div>
+<h2 class="mtitle">{{t.adminTitle}}</h2><p class="psub" style="margin-top:6px">{{t.adminSub}}</p>
+<form sc-camel-on-submit="{{doLogin}}"><div class="field mt16"><label class="flab">{{t.password}}</label><input class="inp" name="pwd" type="password" placeholder="••••" autofocus=""></div>
+<sc-if value="{{loginErr}}" hint-placeholder-val="{{false}}"><div class="err">{{loginErr}}</div></sc-if>
+<div class="fx gap8 mt16"><button class="btn" type="submit" style="flex:1">{{t.signIn}}</button><button class="btn ghost" type="button" sc-camel-on-click="{{closeLogin}}">{{t.cancel}}</button></div></form>
+</div></div>
+</sc-if>
+<div class="landing-inner">
+
+<header class="landing-head"><img class="moca-logo" src="af83ecc7-017f-4f34-9878-0b3ab69dd8f0" alt="Ministry of Cabinet Affairs" style="width: 213px; height: 143px"><h1 class="landing-title" style="font-size: 40px; width: 269px; height: 56px">{{t.eventsTracker}}</h1><p class="landing-sub" style="font-size: 18px; width: 229px; height: 24px">{{t.landingSub}}</p><button class="login-signout" sc-camel-on-click="{{doSignOut}}">{{signOutL}}</button></header><div class="evgrid">
+<sc-for list="{{eventCards}}" as="ev" hint-placeholder-count="3">
+<div class="evcard" sc-camel-on-click="{{ev.open}}" style="width: 270px; height: 310px; position: relative">
+<sc-if value="{{ev.isAdmin}}" hint-placeholder-val="{{false}}"><div style="position:absolute;top:10px;inset-inline-end:10px;display:flex;gap:6px;z-index:2"><button class="evtool" sc-camel-on-click="{{ev.editEv}}" title="Edit event"><svg sc-camel-view-box="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"></path></svg></button><button class="evtool evtool-del" sc-camel-on-click="{{ev.delEv}}" title="Delete event"><svg sc-camel-view-box="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2m1 0l-1 14H8L7 6"></path></svg></button></div></sc-if>
+<div class="evlogo">{{ev.logoEl}}</div>
+<div class="evname" style="font-size: 17px">{{ev.name}}</div>
+<div class="evdate" style="font-size: 14px">{{ev.date}}</div>
+<button class="btn evbtn" sc-camel-on-click="{{ev.open}}">{{t.openTrackerL}}</button>
+</div>
+</sc-for>
+<sc-if value="{{admin}}" hint-placeholder-val="{{false}}"><div class="evcard evadd" sc-camel-on-click="{{openAddEvent}}">
+<div class="evadd-plus">+</div>
+<div class="evname" style="font-size: 17px">{{t.addEventT}}</div>
+<button class="btn ghost evbtn" sc-camel-on-click="{{openAddEvent}}">{{t.createTrackerL}}</button>
+</div></sc-if>
+</div>
+<section class="calsec">
+<div class="calhead"><h2 class="cal-title">{{t.calTitle}}</h2></div>
+<div class="calwrap">
+<div class="card calgrid-card">
+<div class="calnav"><button class="calnav-btn" sc-camel-on-click="{{calPrev}}" aria-label="Previous month">‹</button><div class="calmonth">{{calMonthLabel}}</div><button class="calnav-btn" sc-camel-on-click="{{calNext}}" aria-label="Next month">›</button></div>
+<div class="calgrid">
+<sc-for list="{{calDows}}" as="w" hint-placeholder-count="7"><div class="caldow">{{w.d}}</div></sc-for>
+<sc-for list="{{calCells}}" as="c" hint-placeholder-count="35"><div class="{{c.cellCls}}" sc-camel-on-click="{{c.open}}" title="{{c.evName}}"><span class="calday">{{c.day}}</span><span class="caldot" style="background:{{c.dot}}"></span></div></sc-for>
+</div>
+</div>
+<div class="callist">
+<sc-for list="{{upcomingEvents}}" as="e" hint-placeholder-count="3">
+<div class="calitem" sc-camel-on-click="{{e.open}}">
+<div class="calitem-logo">{{e.logoEl}}</div>
+<div class="calitem-body"><div class="calitem-n">{{e.name}}</div><div class="calitem-d">{{e.period}}</div><span class="pill {{e.statusPill}}"><span class="dot"></span>{{e.statusL}}</span></div>
+<button class="btn ghost btn-sm calitem-btn" sc-camel-on-click="{{e.open}}">{{t.openTrackerL}}</button>
+</div>
+</sc-for>
+<div class="calitem calitem-add" sc-camel-on-click="{{openAddEvent}}">
+<div class="calitem-logo calitem-logo-add">+</div>
+<div class="calitem-body"><div class="calitem-n">{{t.addEventT}}</div><span class="pill pg-purple"><span class="dot"></span>{{t.calCreateNew}}</span></div>
+<button class="btn ghost btn-sm calitem-btn" sc-camel-on-click="{{openAddEvent}}">{{t.createNewL}}</button>
+</div>
+</div>
+</div>
+</section>
+</div>
+<sc-if value="{{showAddEvent}}" hint-placeholder-val="{{false}}">
+<div class="ovl" sc-camel-on-click="{{closeAddEvent}}"><div class="modal" sc-camel-on-click="{{stop}}">
+<div class="fx jb" style="align-items:flex-start;gap:14px"><h2 class="mtitle">{{t.addEventTitle}}</h2><button class="mclose" sc-camel-on-click="{{closeAddEvent}}">×</button></div>
+<form sc-camel-on-submit="{{createEvent}}">
+<div class="fgrid mt16"><div class="field"><label class="flab">{{t.fEvName}}</label><input class="inp" name="en" autofocus=""></div><div class="field"><label class="flab">{{t.fEvNameAr}}</label><input class="inp" name="ar" dir="rtl"></div></div>
+<div class="field mt16"><label class="flab">{{t.fEvLogo}}</label><button type="button" class="logo-upload" sc-camel-on-click="{{pickNewLogo}}"><span class="logo-upload-ic">⬆</span><span>{{t.fEvLogoHint}}</span></button><sc-if value="{{newLogoName}}" hint-placeholder-val="{{false}}"><div class="mut fs12" style="margin-top:6px">{{newLogoName}}</div></sc-if></div>
+<div class="fgrid mt16"><div class="field"><label class="flab">{{t.fEvPeriod}}</label><input class="inp" name="period"></div><div class="field"><label class="flab">{{t.fEvOwner}}</label><input class="inp" name="owner"></div></div>
+<div class="fx gap8 mt24" style="justify-content:flex-end"><button class="btn ghost" type="button" sc-camel-on-click="{{closeAddEvent}}">{{t.cancel}}</button><button class="btn" type="submit">{{t.createTrackerL}}</button></div>
+</form>
+</div></div>
+</sc-if>
+<sc-if value="{{editingEvent}}" hint-placeholder-val="{{false}}">
+<div class="ovl" sc-camel-on-click="{{closeEditEvent}}"><div class="modal" sc-camel-on-click="{{stop}}">
+<div class="fx jb" style="align-items:flex-start;gap:14px"><h2 class="mtitle">{{evEditT}}</h2><button class="mclose" sc-camel-on-click="{{closeEditEvent}}">×</button></div>
+<form sc-camel-on-submit="{{saveEventEdit}}">
+<div class="fgrid mt16"><div class="field"><label class="flab">{{t.fEvName}}</label><input class="inp" name="en" sc-camel-default-value="{{editingEvent.en}}" autofocus=""></div><div class="field"><label class="flab">{{t.fEvNameAr}}</label><input class="inp" name="ar" dir="rtl" sc-camel-default-value="{{editingEvent.ar}}"></div></div>
+<div class="field mt16"><label class="flab">{{t.fEvLogo}}</label><button type="button" class="logo-upload" sc-camel-on-click="{{pickEditLogo}}"><span class="logo-upload-ic">⬆</span><span>{{t.fEvLogoHint}}</span></button><sc-if value="{{editLogoName}}" hint-placeholder-val="{{false}}"><div class="mut fs12" style="margin-top:6px">{{editLogoName}}</div></sc-if></div>
+<div class="fgrid mt16"><div class="field"><label class="flab">{{t.fEvPeriod}}</label><input class="inp" name="period" sc-camel-default-value="{{editingEvent.period}}"></div><div class="field"><label class="flab">{{t.fEvOwner}}</label><input class="inp" name="owner" sc-camel-default-value="{{editingEvent.owner}}"></div></div>
+<div class="fx gap8 mt24" style="justify-content:flex-end"><button class="btn ghost" type="button" sc-camel-on-click="{{closeEditEvent}}">{{t.cancel}}</button><button class="btn" type="submit">{{t.saveChanges}}</button></div>
+</form>
+</div></div>
+</sc-if>
+<sc-if value="{{confirmDelEventName}}" hint-placeholder-val="{{false}}">
+<div class="ovl" sc-camel-on-click="{{cancelDelEvent}}"><div class="modal" sc-camel-on-click="{{stop}}" style="max-width:420px">
+<div class="fx jb" style="align-items:flex-start;gap:14px"><h2 class="mtitle">{{evDelT}}</h2><button class="mclose" sc-camel-on-click="{{cancelDelEvent}}">×</button></div>
+<p class="psub" style="margin-top:10px"><strong>{{confirmDelEventName}}</strong></p>
+<p class="psub" style="margin-top:6px">{{evDelMsg}}</p>
+<div class="fx gap8 mt24" style="justify-content:flex-end"><button class="btn ghost" type="button" sc-camel-on-click="{{cancelDelEvent}}">{{t.cancel}}</button><button class="btn" type="button" sc-camel-on-click="{{doDelEvent}}" style="background:#C0392B">{{evDelBtn}}</button></div>
+</div></div>
+</sc-if>
+</div>
+</sc-if>
+<sc-if value="{{inTracker}}" hint-placeholder-val="{{false}}">
+<div class="app {{accCls}} {{densityCls}} {{dirCls}} {{railClass}}" dir="{{dir}}">
+<aside class="rail">
+<button class="railtoggle" sc-camel-on-click="{{toggleRail}}" aria-label="Toggle menu"><svg sc-camel-view-box="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"></path></svg></button>
+<div class="raillogo"><span class="railmark">{{railLogoEl}}</span><span class="rlt">{{eventName}}</span></div>
+<nav class="railnav">
+<sc-if value="{{canExec}}" hint-placeholder-val="{{true}}"><button class="navitem {{navOverview.cls}}" sc-camel-on-click="{{navOverview.go}}"><svg sc-camel-view-box="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"></rect><rect x="14" y="3" width="7" height="5" rx="1.5"></rect><rect x="14" y="12" width="7" height="9" rx="1.5"></rect><rect x="3" y="16" width="7" height="5" rx="1.5"></rect></svg><span class="nvl">{{navOverview.label}}</span></button></sc-if>
+<button class="navitem {{navDash.cls}}" sc-camel-on-click="{{navDash.go}}"><svg sc-camel-view-box="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11" stroke-linecap="round"></path><path d="M4.5 6l.01 0M4.5 12l.01 0M4.5 18l.01 0" stroke-linecap="round" stroke-width="2.6"></path></svg><span class="nvl">{{navDash.label}}</span></button>
+<sc-if value="{{canExec}}" hint-placeholder-val="{{true}}"><button class="navitem {{navApprovals.cls}}" sc-camel-on-click="{{navApprovals.go}}"><svg sc-camel-view-box="0 0 24 24"><path d="M9 12.5l2.2 2.2L15.5 10" stroke-linecap="round" stroke-linejoin="round"></path><path d="M12 3l7 3v5.5c0 4.3-2.9 7.4-7 8.5-4.1-1.1-7-4.2-7-8.5V6z"></path></svg><span class="nvl">{{navApprovals.label}}</span><sc-if value="{{navApprovals.badge}}" hint-placeholder-val="{{false}}"><span class="navbadge">{{navApprovals.badge}}</span></sc-if></button></sc-if>
+<button class="navitem {{navDesign.cls}}" sc-camel-on-click="{{navDesign.go}}"><svg sc-camel-view-box="0 0 24 24"><path d="M12 3l7 4v10l-7 4-7-4V7z"></path><path d="M12 3v18M5 7l7 4 7-4" stroke-linecap="round" stroke-linejoin="round"></path></svg><span class="nvl">{{navDesign.label}}</span></button>
+<button class="navitem {{navTimeline.cls}}" sc-camel-on-click="{{navTimeline.go}}"><svg sc-camel-view-box="0 0 24 24"><path d="M12 4v16"></path><circle cx="12" cy="7" r="2.4"></circle><circle cx="12" cy="17" r="2.4"></circle><path d="M14.4 7H20M4 17h5.6" stroke-linecap="round"></path></svg><span class="nvl">{{navTimeline.label}}</span></button>
+<sc-if value="{{admin}}" hint-placeholder-val="{{false}}"><button class="navitem {{navMgmt.cls}}" sc-camel-on-click="{{navMgmt.go}}"><svg sc-camel-view-box="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"></path><circle cx="10" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"></path></svg><span class="nvl">{{navMgmt.label}}</span></button></sc-if>
+<sc-if value="{{navHotelShow}}" hint-placeholder-val="{{false}}"><button class="navitem {{navHotel.cls}}" sc-camel-on-click="{{navHotel.go}}"><svg sc-camel-view-box="0 0 24 24"><path d="M3 21V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v16M3 21h18M8 7h2m4 0h2M8 11h2m4 0h2M8 15h2m4 0h2" stroke-linecap="round" stroke-linejoin="round"></path></svg><span class="nvl">{{navHotel.label}}</span></button></sc-if>
+<button class="navitem {{navFeedback.cls}}" sc-camel-on-click="{{navFeedback.go}}"><svg sc-camel-view-box="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 0 1-8.9 8.4 9 9 0 0 1-3.8-.8L3 20l1-4.9A8.4 8.4 0 1 1 21 11.5z" stroke-linecap="round" stroke-linejoin="round"></path></svg><span class="nvl">{{navFeedback.label}}</span><sc-if value="{{navFeedback.locked}}" hint-placeholder-val="{{false}}"><svg sc-camel-view-box="0 0 24 24" width="12" height="12" style="margin-inline-start:auto;opacity:.5;flex:none"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg></sc-if></button>
+</nav>
+<div class="railbottom">
+<button class="navitem {{navSettings.cls}}" sc-camel-on-click="{{navSettings.go}}"><svg sc-camel-view-box="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 13.5a7.7 7.7 0 0 0 0-3l1.7-1.3-1.9-3.3-2 .8a7.7 7.7 0 0 0-2.6-1.5l-.3-2.1H10.7l-.3 2.1A7.7 7.7 0 0 0 7.8 5.7l-2-.8L3.9 8.2l1.7 1.3a7.7 7.7 0 0 0 0 3l-1.7 1.3 1.9 3.3 2-.8a7.7 7.7 0 0 0 2.6 1.5l.3 2.1h3.8l.3-2.1a7.7 7.7 0 0 0 2.6-1.5l2 .8 1.9-3.3z"></path></svg><span class="nvl">{{navSettings.label}}</span></button>
+<button class="navitem" sc-camel-on-click="{{doSignOut}}"><svg sc-camel-view-box="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><path d="M16 17l5-5-5-5M21 12H9" stroke-linecap="round" stroke-linejoin="round"></path></svg><span class="nvl">{{signOutL}}</span></button>
+</div>
+</aside><div class="maincol" style="background: url(&quot;4dfd8f0c-b841-4d5d-beae-4ddbddef226c&quot;) center / cover no-repeat">
+<header class="topbar" style="background-color: #FFFFFFD1">
+<div class="fx ac gap12" style="min-width:0">
+<button class="backev" sc-camel-on-click="{{backToEvents}}">{{t.backToEvents}}</button>
+<span class="tbev-logo">{{topLogoEl}}</span>
+<div style="min-width:0"><div class="tbrand">{{eventName}}</div><div class="tbperiod">{{eventPeriod}}</div></div>
+</div>
+<div class="fx ac gap12">
+<div style="position:relative">
+<button class="notifbtn" type="button" sc-camel-on-click="{{notifToggle}}" title="{{t.notifT}}"><svg sc-camel-view-box="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.7 21a2 2 0 0 1-3.4 0"></path></svg><sc-if value="{{notifHas}}" hint-placeholder-val="{{false}}"><span class="notifdot">{{notifCount}}</span></sc-if></button>
+<sc-if value="{{notifOpen}}" hint-placeholder-val="{{false}}">
+<div class="notifpanel">
+<div class="fx jb ac gap8" style="padding:12px 15px;border-bottom:1px solid var(--line)"><span style="font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase">{{t.notifT}}</span><sc-if value="{{notifHas}}" hint-placeholder-val="{{false}}"><span class="pill pg-a" style="padding:3px 9px"><span class="dot"></span>{{notifCount}}</span></sc-if></div>
+<sc-if value="{{notifHas}}" hint-placeholder-val="{{false}}"><div style="max-height:320px;overflow-y:auto"><sc-for list="{{notifItems}}" as="nt" hint-placeholder-count="2">
+<button type="button" class="notifrow" sc-camel-on-click="{{nt.go}}"><span class="notifrow-t">{{nt.title}}</span><span class="notifrow-s">{{nt.sub}}</span></button>
+</sc-for></div></sc-if>
+<sc-if value="{{notifEmpty}}" hint-placeholder-val="{{true}}"><div style="padding:26px 15px;text-align:center;font-size:12.5px;color:var(--mut)">{{t.notifEmpty}}</div></sc-if>
+</div>
+</sc-if>
+</div>
+<sc-if value="{{isWef}}" hint-placeholder-val="{{true}}"><div class="cdmini"><span class="cdmn">{{cdDays}}</span><span class="cdml">{{t.daysToWef}}</span></div></sc-if>
+<div class="lang"><button class="lbtn {{enCls}}" sc-camel-on-click="{{setEn}}">EN</button><button class="lbtn {{arCls}}" sc-camel-on-click="{{setAr}}">العربية</button></div>
+<button class="topbar-signout" sc-camel-on-click="{{doSignOut}}">{{signOutL}}</button>
+<sc-if value="{{showStreamPick}}" hint-placeholder-val="{{false}}"><sc-raw-select class="sel" style="font-size:12px;padding:6px 10px;border-radius:999px;max-width:160px;flex-shrink:1;min-width:0" sc-camel-on-change="{{setMyStream}}" title="{{myStreamLabel}}"><sc-for list="{{myStreamOpts}}" as="o" hint-placeholder-count="3"><option value="{{o.v}}" selected="{{o.sel}}">{{o.t}}</option></sc-for></sc-raw-select></sc-if>
+<sc-if value="{{showLeadPick}}" hint-placeholder-val="{{false}}"><sc-raw-select class="sel" style="font-size:12px;padding:6px 10px;border-radius:999px;max-width:160px;flex-shrink:1;min-width:0" sc-camel-on-change="{{setLead}}"><sc-for list="{{leadOpts}}" as="o" hint-placeholder-count="3"><option value="{{o.v}}" selected="{{o.sel}}">{{o.t}}</option></sc-for></sc-raw-select></sc-if>
+<div class="lang"><sc-for list="{{roleTabs}}" as="rt" hint-placeholder-count="3"><button class="lbtn {{rt.cls}}" sc-camel-on-click="{{rt.go}}">{{rt.l}}</button></sc-for></div>
+</div>
+</header>
+<sc-if value="{{toast}}" hint-placeholder-val="{{false}}"><div class="toast"><span class="pulse"></span>{{toast}}</div></sc-if>
+<sc-if value="{{showLogin}}" hint-placeholder-val="{{false}}">
+<div class="ovl" sc-camel-on-click="{{closeLogin}}"><div class="modal" sc-camel-on-click="{{stop}}">
+<div class="fx jb" style="align-items:flex-start"><div class="lockcircle">🔒</div><button class="mclose" sc-camel-on-click="{{closeLogin}}">×</button></div>
+<h2 class="mtitle">{{t.adminTitle}}</h2><p class="psub" style="margin-top:6px">{{t.adminSub}}</p>
+<form sc-camel-on-submit="{{doLogin}}"><div class="field mt16"><label class="flab">{{t.password}}</label><input class="inp" name="pwd" type="password" placeholder="••••" autofocus=""></div>
+<sc-if value="{{loginErr}}" hint-placeholder-val="{{false}}"><div class="err">{{loginErr}}</div></sc-if>
+<div class="fx gap8 mt16"><button class="btn" type="submit" style="flex:1">{{t.signIn}}</button><button class="btn ghost" type="button" sc-camel-on-click="{{closeLogin}}">{{t.cancel}}</button></div></form>
+</div></div>
+</sc-if>
+<sc-if value="{{editModal}}" hint-placeholder-val="{{false}}">
+<div class="ovl" sc-camel-on-click="{{closeEdit}}"><div class="modal wide" sc-camel-on-click="{{stop}}">
+<div class="fx jb" style="align-items:flex-start"><h2 class="mtitle">{{t.editTitle}}: {{editModal.n}}</h2><button class="mclose" sc-camel-on-click="{{closeEdit}}">×</button></div>
+<form sc-camel-on-submit="{{saveEdit}}"><div class="fgrid mt16">
+<div class="field"><label class="flab">{{t.lead}}</label><input class="inp" name="o" value="{{editModal.o}}"></div>
+<div class="field"><label class="flab">{{t.fProg}}</label><input class="inp" name="p" type="number" min="0" max="100" value="{{editModal.p}}"></div>
+<div class="field"><label class="flab">{{t.fStatus}}</label><sc-raw-select class="sel inp" name="s"><sc-for list="{{editStatusOpts}}" as="o" hint-placeholder-count="3"><option value="{{o.v}}" selected="{{o.sel}}">{{o.t}}</option></sc-for></sc-raw-select></div>
+<div class="field"><label class="flab">{{t.due}}</label><input class="inp" name="d" value="{{editModal.d}}"></div>
+</div>
+<div class="field mt16"><label class="flab">{{t.ach}}</label><textarea class="inp ta" name="a">{{editModal.a}}</textarea></div>
+<div class="fgrid mt16"><div class="field"><label class="flab">{{t.blk}}</label><textarea class="inp ta" name="b">{{editModal.b}}</textarea></div>
+<div class="field"><label class="flab">{{t.nxt}}</label><textarea class="inp ta" name="x">{{editModal.x}}</textarea></div></div>
+<div class="fx gap8 mt24" style="justify-content:flex-end"><button class="btn ghost" type="button" sc-camel-on-click="{{closeEdit}}">{{t.cancel}}</button><button class="btn" type="submit">{{t.saveChanges}}</button></div>
+</form></div></div>
+</sc-if>
+<sc-if value="{{detailModal}}" hint-placeholder-val="{{false}}">
+<div class="ovl" sc-camel-on-click="{{closeDetail}}"><div class="modal det2" sc-camel-on-click="{{stop}}">
+<button class="mclose det2x" sc-camel-on-click="{{closeDetail}}">×</button>
+<div class="det2head">
+<div><div class="detname">{{detailModal.n}}</div><div class="fx ac gap10 mt8"><span class="pill {{detailModal.pill}}"><span class="dot"></span>{{detailModal.sl}}</span><span class="mut fs12">{{t.updated}} {{detailModal.u}}</span></div></div>
+<div class="det2leads">
+<div class="det2lead"><div class="det2av {{detailModal.leadPhoto.cls}}" style="{{detailModal.leadPhoto.style}}" sc-camel-on-click="{{detailModal.leadPhoto.pick}}">{{detailModal.leadPhoto.init}}</div><div><div class="det2ln">{{detailModal.o}}</div><div class="det2lr">{{t.teamLead}}</div></div></div>
+<div class="det2lead"><div class="det2av">{{detailModal.depInit}}</div><div><div class="det2ln">{{detailModal.dep}}</div><div class="det2lr">{{t.deputy}}</div></div></div>
+</div>
+</div>
+<div class="det2sec"><div class="det2lab">{{t.orgTitle}}</div>
+<div class="det2force"><sc-for list="{{detailModal.force}}" as="p" hint-placeholder-count="4"><div class="det2person"><div class="det2pav {{p.cls}}" style="{{p.style}}" sc-camel-on-click="{{p.pick}}">{{p.init}}</div><div class="det2pn">{{p.n}}</div><div class="det2pr">{{p.role}}</div></div></sc-for></div>
+</div>
+<div class="detgrid">
+<div class="detsec"><div class="detlab">{{t.detUpdates}}</div><div class="detval">{{detailModal.a}}</div></div>
+<div class="detsec"><div class="detlab">{{t.detChallenges}}</div><div class="detval">{{detailModal.b}}</div></div>
+<div class="detsec"><div class="detlab">{{t.detApprovals}}</div><div class="detval">{{detailModal.ap}}</div></div>
+<div class="detsec"><div class="detlab">{{t.detNext}}</div><div class="detval">{{detailModal.x}}</div></div>
+</div>
+<div class="det2prog"><span class="eyebrow">{{t.fProg}}</span><div class="detbar"><span style="width:{{detailModal.p}}%"></span></div><span class="fw7">{{detailModal.p}}%</span><span class="due" style="margin-inline-start:auto">{{t.due}} {{detailModal.d}}</span></div>
+<div class="det2sec"><div class="det2lab">{{t.opTracker}}</div>
+<div class="tl"><div class="tlline"></div><sc-for list="{{detailModal.tracker}}" as="tk" hint-placeholder-count="3"><div class="tlitem tkitem"><span class="tldot {{tk.dotCls}}"></span><div class="tltitle">{{tk.t}}</div></div></sc-for></div>
+</div>
+<div class="det2foot"><button class="btn ghost" sc-camel-on-click="{{closeDetail}}">{{t.close}}</button><sc-if value="{{admin}}" hint-placeholder-val="{{false}}"><button class="btn ghost" sc-camel-on-click="{{detailModal.edit}}">{{t.edit}}</button></sc-if><button class="btn" sc-camel-on-click="{{detailModal.goUpdate}}">{{t.submitBtn}}</button></div>
+</div></div>
+</sc-if>
+
+<sc-if value="{{actionModal}}" hint-placeholder-val="{{false}}">
+<div class="ovl" sc-camel-on-click="{{closeAction}}"><div class="modal" sc-camel-on-click="{{stop}}">
+<div class="fx jb" style="align-items:flex-start;gap:14px"><h2 class="mtitle" style="flex:1">{{actionModal.t}}</h2><button class="mclose" sc-camel-on-click="{{closeAction}}">×</button></div>
+<div class="fx ac gap10 mt8"><span class="pill {{actionModal.pill}}"><span class="dot"></span>{{actionModal.sl}}</span><span class="prtag {{actionModal.prCls}}">{{actionModal.pr}}</span></div>
+<div class="amgrid">
+<div><div class="rlab">{{t.owner}}</div><div class="rtxt">{{actionModal.o}}</div></div>
+<div><div class="rlab">{{t.dueDate}}</div><div class="due" style="margin-top:6px">{{actionModal.d}}</div></div>
+<div class="amspan"><div class="rlab">{{t.detUpdates}}</div><div class="rtxt">{{actionModal.up}}</div></div>
+<div class="amspan"><div class="rlab">{{t.detChallenges}}</div><div class="rtxt">{{actionModal.ch}}</div></div>
+<div><div class="rlab">{{t.thDependency}}</div><div class="rtxt">{{actionModal.dep}}</div></div>
+<div><div class="rlab">{{t.thNext}}</div><div class="rtxt">{{actionModal.nx}}</div></div>
+</div>
+<div class="det2foot"><button class="btn" sc-camel-on-click="{{closeAction}}">{{t.close}}</button></div>
+</div></div>
+</sc-if>
+<sc-if value="{{agendaModal}}" hint-placeholder-val="{{false}}">
+<div class="ovl" sc-camel-on-click="{{closeAgenda}}"><div class="modal" sc-camel-on-click="{{stop}}">
+<div class="fx jb" style="align-items:flex-start;gap:14px"><h2 class="mtitle" style="flex:1">{{agendaModal.t}}</h2><button class="mclose" sc-camel-on-click="{{closeAgenda}}">×</button></div>
+<div class="amgrid">
+<div><div class="rlab">{{t.dateL}}</div><div class="rtxt">{{agendaModal.date}}</div></div>
+<div><div class="rlab">{{t.timeL}}</div><div class="due" style="margin-top:6px">{{agendaModal.time}}</div></div>
+<div><div class="rlab">{{t.locationL}}</div><div class="rtxt">{{agendaModal.loc}}</div></div>
+<div><div class="rlab">{{t.teamOwner}}</div><div class="rtxt">{{agendaModal.team}}</div></div>
+<div class="amspan"><div class="rlab">{{t.notesL}}</div><div class="rtxt">{{agendaModal.notes}}</div></div>
+</div>
+<div class="det2foot" style="justify-content:space-between"><button class="btn ghost" sc-camel-on-click="{{agendaModal.addToCal}}">{{t.addToCalL}}</button><button class="btn" sc-camel-on-click="{{closeAgenda}}">{{t.close}}</button></div>
+</div></div>
+</sc-if>
+<sc-if value="{{tlBlockModal}}" hint-placeholder-val="{{false}}">
+<div class="ovl" sc-camel-on-click="{{closeTl}}"><div class="modal wide" sc-camel-on-click="{{stop}}">
+<div class="fx jb" style="align-items:flex-start"><h2 class="mtitle">{{t.editSessionL}}</h2><button class="mclose" sc-camel-on-click="{{closeTl}}">×</button></div>
+<form sc-camel-on-submit="{{saveTlBlock}}">
+<div class="fgrid mt16">
+<div class="field"><label class="flab">{{t.timeL}}</label><input class="inp" name="time" defaultValue="{{tlBlockModal.time}}"></div>
+<div class="field"><label class="flab">{{t.sessionTitleL}}</label><input class="inp" name="t" defaultValue="{{tlBlockModal.t}}"></div>
+<div class="field"><label class="flab">{{t.subtitleL}}</label><input class="inp" name="sub" defaultValue="{{tlBlockModal.sub}}"></div>
+<div class="field"><label class="flab">{{t.locationL}}</label><input class="inp" name="loc" defaultValue="{{tlBlockModal.loc}}"></div>
+<div class="field"><label class="flab">{{t.teamOwner}}</label><input class="inp" name="team" defaultValue="{{tlBlockModal.team}}"></div>
+</div>
+<div class="field mt16"><label class="flab">{{t.notesL}}</label><textarea class="inp ta" name="notes" defaultValue="{{tlBlockModal.notes}}"></textarea></div>
+<div class="fx gap8 mt24" style="justify-content:flex-end"><button class="btn ghost" type="button" sc-camel-on-click="{{closeTl}}">{{t.cancel}}</button><button class="btn" type="submit">{{t.saveChanges}}</button></div>
+</form></div></div>
+</sc-if>
+<sc-if value="{{tlDayModal}}" hint-placeholder-val="{{false}}">
+<div class="ovl" sc-camel-on-click="{{closeTl}}"><div class="modal" sc-camel-on-click="{{stop}}">
+<div class="fx jb" style="align-items:flex-start"><h2 class="mtitle">{{t.editDayL}}</h2><button class="mclose" sc-camel-on-click="{{closeTl}}">×</button></div>
+<form sc-camel-on-submit="{{saveTlDay}}">
+<div class="fgrid mt16">
+<div class="field"><label class="flab">{{t.dateL}}</label><input class="inp" name="date" defaultValue="{{tlDayModal.date}}"></div>
+<div class="field"><label class="flab">{{t.dayTitleL}}</label><input class="inp" name="day" defaultValue="{{tlDayModal.day}}"></div>
+</div>
+<div class="field mt16"><label class="flab">{{t.taglineL}}</label><input class="inp" name="tagline" defaultValue="{{tlDayModal.tagline}}"></div>
+<div class="fx gap8 mt24" style="justify-content:flex-end"><button class="btn ghost" type="button" sc-camel-on-click="{{closeTl}}">{{t.cancel}}</button><button class="btn" type="submit">{{t.saveChanges}}</button></div>
+</form></div></div>
+</sc-if>
+<sc-if value="{{pdfReady}}" hint-placeholder-val="{{false}}">
+<div class="ovl" sc-camel-on-click="{{closePdf}}"><div class="modal pdfmodal" sc-camel-on-click="{{stop}}">
+<button class="mclose" style="position:absolute;top:14px;inset-inline-end:16px" sc-camel-on-click="{{closePdf}}">×</button>
+<div class="pdfready-ic"><svg sc-camel-view-box="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><path d="M14 3v5h5"></path><path d="M9.3 14.4l1.9 1.9 3.5-4.1"></path></svg></div>
+<h2 class="mtitle" style="text-align:center">{{t.pdfReadyTitle}}</h2>
+<p class="pdfready-msg">{{t.pdfReadyMsg}}</p>
+<div class="pdfready-fname">{{pdfReady.fname}}</div>
+<div class="shareactions">
+<button class="btn" sc-camel-on-click="{{pdfReady.download}}">{{t.downloadPdfL}}</button>
+<button class="btn ghost" sc-camel-on-click="{{pdfReady.share}}">{{t.sharePdfL}}</button>
+<a class="btn btn-wa" href="{{pdfReady.wa}}" target="_blank" rel="noopener">{{t.openWhatsappL}}</a>
+<button class="btn ghost" sc-camel-on-click="{{closePdf}}">{{t.close}}</button>
+</div>
+</div></div>
+</sc-if>
+
+<sc-if value="{{logAddModal}}" hint-placeholder-val="{{false}}">
+<div class="ovl" sc-camel-on-click="{{closeLogAdd}}"><div class="modal" style="max-width:460px" sc-camel-on-click="{{stop}}">
+<div class="fx jb" style="align-items:flex-start;gap:14px"><h2 class="mtitle">{{logAddModal.title}}</h2><button class="mclose" sc-camel-on-click="{{closeLogAdd}}">×</button></div>
+<p class="psub" style="margin-top:4px">{{logAddModal.team}}</p>
+<form sc-camel-on-submit="{{saveLogAdd}}">
+<div class="field mt16"><label class="flab">{{t.logPh}}</label><textarea class="inp logta" name="txt" autofocus=""></textarea></div>
+<div class="fx gap8 mt16"><button class="btn" type="submit">{{t.logSave}}</button><button class="btn ghost" type="button" sc-camel-on-click="{{closeLogAdd}}">{{t.logCancel}}</button></div>
+</form>
+</div></div>
+</sc-if>
+
+<sc-if value="{{logHistModal}}" hint-placeholder-val="{{false}}">
+<div class="ovl" sc-camel-on-click="{{closeLogHist}}"><div class="modal" style="max-width:560px" sc-camel-on-click="{{stop}}">
+<div class="fx jb" style="align-items:flex-start;gap:14px"><h2 class="mtitle">{{logHistModal.title}}</h2><button class="mclose" sc-camel-on-click="{{closeLogHist}}">×</button></div>
+<p class="psub" style="margin-top:4px">{{logHistModal.team}}</p>
+<sc-if value="{{logHistModal.empty}}" hint-placeholder-val="{{false}}"><div class="loghm-empty">{{t.logHistEmpty}}</div></sc-if>
+<div class="loghm-list"><sc-for list="{{logHistModal.rows}}" as="h" hint-placeholder-count="3">
+<div class="{{h.rowCls}}">
+<span class="logdate">{{h.dateL}}</span>
+<span class="loghm-txt">{{h.text}}</span>
+<sc-if value="{{h.notConfirming}}" hint-placeholder-val="{{true}}"><button class="loghm-del loghm-eye" type="button" title="{{h.showTitle}}" sc-camel-on-click="{{h.toggleShow}}"><sc-if value="{{h.hidden}}" hint-placeholder-val="{{false}}"><svg sc-camel-view-box="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"></path><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"></path><path d="M1 1l22 22"></path></svg></sc-if><sc-if value="{{h.notHidden}}" hint-placeholder-val="{{true}}"><svg sc-camel-view-box="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></sc-if></button><button class="loghm-del" type="button" title="{{t.taskDeleteL}}" sc-camel-on-click="{{h.ask}}"><svg sc-camel-view-box="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18"></path><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"></path><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path></svg></button></sc-if>
+<sc-if value="{{h.confirming}}" hint-placeholder-val="{{false}}"><span class="fx ac gap8"><span class="taskdel-q">{{t.logDelQ}}</span><button class="taskdelbtn btnsm" type="button" sc-camel-on-click="{{h.yes}}">{{t.taskDeleteYes}}</button><button class="btn ghost btnsm" type="button" sc-camel-on-click="{{h.no}}">{{t.logCancel}}</button></span></sc-if>
+</div>
+</sc-for></div>
+</div></div>
+</sc-if>
+
+<sc-if value="{{taskEditModal}}" hint-placeholder-val="{{false}}">
+<div class="ovl" sc-camel-on-click="{{closeTaskEdit}}"><div class="modal" style="max-width:520px" sc-camel-on-click="{{stop}}">
+<div class="fx jb" style="align-items:flex-start;gap:14px"><h2 class="mtitle">{{taskEditModal.title}}</h2><button class="mclose" sc-camel-on-click="{{closeTaskEdit}}">×</button></div>
+<form sc-camel-on-submit="{{saveTaskEdit}}">
+<div class="field mt16"><label class="flab">{{t.thAction}}</label><input class="inp" name="t" sc-camel-default-value="{{taskEditModal.t}}" autofocus=""></div>
+<div class="fgrid mt16">
+<div class="field"><label class="flab">{{t.owner}}</label><sc-raw-select class="sel inp" name="o"><sc-for list="{{taskEditModal.ownerOpts}}" as="oo" hint-placeholder-count="3"><option value="{{oo.v}}" selected="{{oo.sel}}">{{oo.l}}</option></sc-for></sc-raw-select></div>
+<div class="field"><label class="flab">{{t.due}}</label><input class="inp" name="d" type="date" sc-camel-default-value="{{taskEditModal.dIso}}"></div>
+</div>
+<div class="fgrid mt16">
+<div class="field"><label class="flab">{{t.fStatus}}</label><sc-raw-select class="sel inp" name="s"><sc-for list="{{taskEditModal.statusOpts}}" as="o" hint-placeholder-count="3"><option value="{{o.v}}" selected="{{o.sel}}">{{o.l}}</option></sc-for></sc-raw-select></div>
+<div class="field"><label class="flab">{{t.thPriority}}</label><sc-raw-select class="sel inp" name="pr"><sc-for list="{{taskEditModal.prOpts}}" as="o" hint-placeholder-count="3"><option value="{{o.v}}" selected="{{o.sel}}">{{o.l}}</option></sc-for></sc-raw-select></div>
+<div class="field"><label class="flab">{{t.thApproval}}</label><sc-raw-select class="sel inp" name="ap"><sc-for list="{{taskEditModal.apOpts}}" as="o" hint-placeholder-count="3"><option value="{{o.v}}" selected="{{o.sel}}">{{o.l}}</option></sc-for></sc-raw-select></div>
+</div>
+<div class="field mt16"><label class="flab">{{t.thNext}}</label><input class="inp" name="nx" sc-camel-default-value="{{taskEditModal.nx}}"></div>
+<div class="mt16" style="border-top:1px solid var(--line);padding-top:14px">
+<label class="fx ac gap8" style="cursor:pointer;font-size:12.5px;font-weight:600"><input type="checkbox" name="hasMt" checked="{{taskEditModal.mtOn}}" sc-camel-on-change="{{taskEditModal.toggleMt}}">{{t.mtToggleL}}</label>
+<sc-if value="{{taskEditModal.mtOn}}" hint-placeholder-val="{{false}}">
+<div class="fgrid mt16">
+<div class="field"><label class="flab">{{t.mtRecL}}</label><input class="inp" name="mtRec" sc-camel-default-value="{{taskEditModal.mtRec}}"></div>
+<div class="field"><label class="flab">{{t.mtPurL}}</label><input class="inp" name="mtPur" sc-camel-default-value="{{taskEditModal.mtPur}}"></div>
+<div class="field"><label class="flab">{{t.mtLocL}}</label><input class="inp" name="mtLoc" sc-camel-default-value="{{taskEditModal.mtLoc}}"></div>
+<div class="field" style="grid-column:1/-1"><label class="flab">{{t.mtTimeL}}</label><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;min-width:0"><input class="inp" name="mtDate" type="date" sc-camel-default-value="{{taskEditModal.mtDate}}" style="width:100%;min-width:0;box-sizing:border-box"><input class="inp" name="mtTime" placeholder="10:00 - 11:00" sc-camel-default-value="{{taskEditModal.mtTime}}" style="width:100%;min-width:0;box-sizing:border-box"></div></div>
+</div>
+</sc-if>
+</div>
+<div class="fx ac gap8 mt24" style="justify-content:flex-end;flex-wrap:wrap"><sc-if value="{{taskEditModal.canDelete}}" hint-placeholder-val="{{false}}"><button class="btn btnred" type="button" style="margin-inline-end:auto" sc-camel-on-click="{{askDeleteTask}}">{{t.taskDeleteL}}</button></sc-if><sc-if value="{{taskEditModal.confirmDel}}" hint-placeholder-val="{{false}}"><span class="fx ac gap8" style="margin-inline-end:auto"><span class="taskdel-q">{{t.taskDeleteQ}}</span><button class="btn btnred" type="button" sc-camel-on-click="{{confirmDeleteTask}}">{{t.taskDeleteYes}}</button></span></sc-if><button class="btn ghost" type="button" sc-camel-on-click="{{closeTaskEdit}}">{{t.logCancel}}</button><button class="btn" type="submit">{{t.logSave}}</button></div>
+</form>
+</div></div>
+</sc-if>
+
+<sc-if value="{{hasMsgPrev}}" hint-placeholder-val="{{false}}">
+<div class="ovl" sc-camel-on-click="{{closeMsgPrev}}"><div class="modal" style="max-width:480px" sc-camel-on-click="{{stop}}">
+<div class="fx jb" style="align-items:flex-start;gap:14px"><div><div class="eyebrow">{{msgPrev.kindL}}</div><h2 class="mtitle" style="margin-top:6px">{{msgPrev.toN}}</h2><div class="mut fs12" style="margin-top:3px">{{msgPrev.toC}}</div></div><button class="mclose" sc-camel-on-click="{{closeMsgPrev}}">×</button></div>
+<div class="mt16" style="background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:14px 16px;font-size:12.5px;line-height:1.7;white-space:pre-wrap">{{msgPrev.msg}}</div>
+<div class="fx ac gap8 mt24" style="justify-content:flex-end"><button class="btn ghost" type="button" sc-camel-on-click="{{closeMsgPrev}}">{{t.close}}</button><button class="btn" type="button" sc-camel-on-click="{{msgPrev.send}}">{{msgPrev.sendL}}</button></div>
+</div></div>
+</sc-if>
+
+<sc-if value="{{hasMtView}}" hint-placeholder-val="{{false}}">
+<div class="ovl" sc-camel-on-click="{{closeMtView}}"><div class="modal" style="max-width:460px" sc-camel-on-click="{{stop}}">
+<div class="fx jb" style="align-items:flex-start;gap:14px"><div><div class="eyebrow">{{t.mtChipL}}</div><h2 class="mtitle" style="margin-top:6px">{{mtModal.title}}</h2></div><button class="mclose" sc-camel-on-click="{{closeMtView}}">×</button></div>
+<div class="mt16">
+<div class="apprm-row"><span class="apprm-k">{{t.mtRecL}}</span><span class="apprm-v">{{mtModal.rec}}</span></div>
+<div class="apprm-row"><span class="apprm-k">{{t.mtPurL}}</span><span class="apprm-v">{{mtModal.pur}}</span></div>
+<div class="apprm-row"><span class="apprm-k">{{t.mtLocL}}</span><span class="apprm-v">{{mtModal.loc}}</span></div>
+<div class="apprm-row"><span class="apprm-k">{{t.mtTimeL}}</span><span class="apprm-v">{{mtModal.timing}}</span></div>
+</div>
+<div class="fx ac gap8 mt24" style="justify-content:flex-end;flex-wrap:wrap"><button class="btn ghost" type="button" sc-camel-on-click="{{closeMtView}}">{{t.close}}</button><button class="btn" type="button" sc-camel-on-click="{{mtModal.addCal}}"><svg sc-camel-view-box="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-inline-end:6px;vertical-align:-2px"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18"></path></svg>{{t.addToCalL}}</button></div>
+</div></div>
+</sc-if>
+
+<sc-if value="{{guideModal}}" hint-placeholder-val="{{false}}">
+<div class="ovl" sc-camel-on-click="{{closeGuide}}"><div class="modal" sc-camel-on-click="{{stop}}">
+<div class="fx jb" style="align-items:flex-start;gap:14px"><div><h2 class="mtitle">{{t.guideTitle}}</h2><p class="psub" style="margin:5px 0 0">{{t.guideSub}}</p></div><button class="mclose" sc-camel-on-click="{{closeGuide}}">×</button></div>
+<div class="checklist mt16">
+<button class="checkrow {{guideLeadersCls}}" type="button" sc-camel-on-click="{{toggleGuideLeaders}}"><span class="checkbox"><svg sc-camel-view-box="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5l3 3 6.5-7"></path></svg></span><span>{{t.guideLeaders}}</span></button>
+<button class="checkrow {{guideMembersCls}}" type="button" sc-camel-on-click="{{toggleGuideMembers}}"><span class="checkbox"><svg sc-camel-view-box="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5l3 3 6.5-7"></path></svg></span><span>{{t.guideMembers}}</span></button>
+<button class="checkrow {{guideUpdatesCls}}" type="button" sc-camel-on-click="{{toggleGuideUpdates}}"><span class="checkbox"><svg sc-camel-view-box="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5l3 3 6.5-7"></path></svg></span><span>{{t.guideUpdates}}</span></button>
+</div>
+<div class="fx gap8 mt24" style="justify-content:flex-end"><button class="btn ghost" sc-camel-on-click="{{closeGuide}}">{{t.cancel}}</button><button class="btn" sc-camel-on-click="{{runGuide}}">{{t.genGuide}}</button></div>
+</div></div>
+</sc-if>
+
+<sc-if value="{{wfEditView}}" hint-placeholder-val="{{false}}">
+<div class="ovl" sc-camel-on-click="{{closeWfEdit}}"><div class="modal" style="max-width:420px" sc-camel-on-click="{{stop}}">
+<div class="fx jb" style="align-items:flex-start;gap:14px"><h2 class="mtitle">{{wfEditView.title}}</h2><button class="mclose" sc-camel-on-click="{{closeWfEdit}}">×</button></div>
+<form sc-camel-on-submit="{{saveWfEdit}}">
+<div class="wfedit-photo">
+<button type="button" class="wfedit-av" sc-camel-on-click="{{pickWfEditPhoto}}"><sc-if value="{{wfEditView.hasPhoto}}" hint-placeholder-val="{{false}}">{{wfEditView.photoEl}}</sc-if><sc-if value="{{wfEditView.noPhoto}}" hint-placeholder-val="{{true}}"><span>{{wfEditView.avInit}}</span></sc-if></button>
+<button type="button" class="wfedit-photobtn" sc-camel-on-click="{{pickWfEditPhoto}}">{{t.wfPhotoL}}</button>
+</div>
+<div class="field mt16"><label class="flab">{{t.wfNameL}}</label><input class="inp" value="{{wfEditView.name}}" sc-camel-on-input="{{setWfName}}" placeholder="{{t.memberNamePh}}" sc-camel-auto-complete="off" sc-camel-auto-focus="">
+<sc-if value="{{wfEditView.hasResults}}" hint-placeholder-val="{{false}}"><div class="empres"><sc-for list="{{wfEditView.results}}" as="r" hint-placeholder-count="3"><button type="button" class="emprow" sc-camel-on-click="{{r.pick}}"><span class="emprow-n">{{r.n}}</span><span class="emprow-m">{{r.meta}}</span></button></sc-for></div></sc-if>
+</div>
+<div class="field mt16"><label class="flab">{{t.wfRoleL}}</label><input class="inp" value="{{wfEditView.role}}" sc-camel-on-change="{{setWfRole}}" placeholder="{{t.memberRolePh}}" sc-camel-auto-complete="off"></div>
+<div class="mt16" style="border-top:1px solid var(--line);padding-top:14px">
+<div class="field"><label class="flab">{{t.accReqL}}</label><div class="lang" style="width:fit-content;margin-top:2px"><button type="button" class="lbtn {{wfEditView.accYesCls}}" sc-camel-on-click="{{setWfAccYes}}">{{t.yesL}}</button><button type="button" class="lbtn {{wfEditView.accNoCls}}" sc-camel-on-click="{{setWfAccNo}}">{{t.noL}}</button></div></div>
+<sc-if value="{{wfEditView.accOn}}" hint-placeholder-val="{{false}}"><div class="field mt16"><label class="flab">{{t.accPartnerL}}</label><input class="inp" value="{{wfEditView.accP}}" sc-camel-on-input="{{setWfAccP}}" placeholder="{{t.accPartnerPh}}" sc-camel-auto-complete="off">
+<sc-if value="{{wfEditView.hasAccPResults}}" hint-placeholder-val="{{false}}"><div class="empres"><sc-for list="{{wfEditView.accPResults}}" as="r" hint-placeholder-count="3"><button type="button" class="emprow" sc-camel-on-click="{{r.pick}}"><span class="emprow-n">{{r.n}}</span><span class="emprow-m">{{r.meta}}</span></button></sc-for></div></sc-if>
+</div></sc-if>
+</div>
+<div class="fx ac gap8 mt24" style="justify-content:space-between">
+<sc-if value="{{wfEditView.canDelete}}" hint-placeholder-val="{{false}}"><button type="button" class="btn ghost btn-danger-ghost" sc-camel-on-click="{{deleteWfMember}}">{{t.wfDeleteL}}</button></sc-if>
+<div class="fx gap8" style="margin-inline-start:auto"><button type="button" class="btn ghost" sc-camel-on-click="{{closeWfEdit}}">{{t.cancel}}</button><button type="submit" class="btn">{{t.wfSaveL}}</button></div>
+</div>
+</form>
+</div></div>
+</sc-if>
+
+<sc-if value="{{apprModal}}" hint-placeholder-val="{{false}}">
+<div class="ovl" sc-camel-on-click="{{closeAppr}}"><div class="modal apprmodal" sc-camel-on-click="{{stop}}">
+<div class="fx jb" style="align-items:flex-start;gap:14px"><div><span class="pill {{apprModal.statusPill}}"><span class="dot"></span>{{apprModal.statusL}}</span><h2 class="mtitle mt10">{{apprModal.title}}</h2></div><button class="mclose" sc-camel-on-click="{{closeAppr}}">×</button></div>
+<div class="apprm-grid">
+<div class="apprm-row"><span class="apprm-k">{{t.apprEventL}}</span><span class="apprm-v">{{apprModal.event}}</span></div>
+<div class="apprm-row"><span class="apprm-k">{{t.apprTeamL}}</span><span class="apprm-v">{{apprModal.team}}</span></div>
+<div class="apprm-row"><span class="apprm-k">{{t.apprByL}}</span><span class="apprm-v">{{apprModal.requestedBy}}</span></div>
+<div class="apprm-row"><span class="apprm-k">{{t.apprReqDateL}}</span><span class="apprm-v">{{apprModal.requestDate}}</span></div>
+<div class="apprm-row"><span class="apprm-k">{{t.due}}</span><span class="apprm-v">{{apprModal.due}}</span></div>
+<div class="apprm-row"><span class="apprm-k">{{t.apprPriorityL}}</span><span class="prtag {{apprModal.prCls}}">{{apprModal.prL}}</span></div>
+</div>
+<label class="flab mt16">{{t.apprDescL}}</label>
+<p class="apprm-desc">{{apprModal.desc}}</p>
+<sc-if value="{{apprModal.hasAttach}}" hint-placeholder-val="{{false}}"><div class="apprm-attach"><span class="apprm-attach-ic">📎</span><a href="{{apprModal.attachUrl}}" download="{{apprModal.attachName}}" style="color:var(--acc);font-weight:600;text-decoration:none">{{apprModal.attachName}}</a></div></sc-if>
+<sc-if value="{{apprModal.noAttach}}" hint-placeholder-val="{{true}}"><div class="apprm-attach"><span class="apprm-attach-ic">📎</span>{{t.apprAttachPh}}</div></sc-if>
+<sc-if value="{{apprModal.hasReason}}" hint-placeholder-val="{{false}}"><div class="apprm-note apprm-note-r"><strong>{{t.apprRejReasonL}}:</strong> {{apprModal.reason}}</div></sc-if>
+<sc-if value="{{apprModal.hasComments}}" hint-placeholder-val="{{false}}">
+<label class="flab mt16">{{t.apprActivityL}}</label>
+<div class="apprm-activity"><sc-for list="{{apprModal.comments}}" as="c" hint-placeholder-count="1"><div class="apprm-cmt"><div class="apprm-cmt-h"><strong>{{c.by}}</strong><span class="mut fs12">{{c.at}}</span></div><div class="apprm-cmt-t">{{c.text}}</div></div></sc-for></div>
+</sc-if>
+<sc-if value="{{apprModal.isRejectMode}}" hint-placeholder-val="{{false}}">
+<label class="flab mt16">{{t.apprRejReasonL}}</label>
+<textarea class="inp sharetext" rows="3" placeholder="{{t.apprRejPh}}" value="{{apprModal.actInput}}" sc-camel-on-change="{{setApprInput}}"></textarea>
+<div class="shareactions"><button class="btn ghost" sc-camel-on-click="{{closeAppr}}">{{t.cancel}}</button><button class="btn btn-danger" sc-camel-on-click="{{apprModal.confirmReject}}">{{t.apprConfirmReject}}</button></div>
+</sc-if>
+<sc-if value="{{apprModal.isCommentMode}}" hint-placeholder-val="{{false}}">
+<label class="flab mt16">{{t.apprCommentL}}</label>
+<textarea class="inp sharetext" rows="3" placeholder="{{t.apprCommentPh}}" value="{{apprModal.actInput}}" sc-camel-on-change="{{setApprInput}}"></textarea>
+<div class="shareactions"><button class="btn ghost" sc-camel-on-click="{{closeAppr}}">{{t.cancel}}</button><button class="btn" sc-camel-on-click="{{apprModal.confirmComment}}">{{t.apprAddComment}}</button></div>
+</sc-if>
+<sc-if value="{{apprModal.showActions}}" hint-placeholder-val="{{true}}">
+<div class="shareactions">
+<button class="btn btn-approve" sc-camel-on-click="{{apprModal.approve}}">{{t.apprApprove}}</button>
+<button class="btn btn-danger" sc-camel-on-click="{{apprModal.startReject}}">{{t.apprReject}}</button>
+<button class="btn ghost" sc-camel-on-click="{{apprModal.startComment}}">{{t.apprAddComment}}</button>
+</div>
+</sc-if>
+<sc-if value="{{apprModal.showDecided}}" hint-placeholder-val="{{false}}">
+<div class="apprm-decided">{{apprModal.decidedBadge}}</div>
+<div class="shareactions"><button class="btn ghost" sc-camel-on-click="{{apprModal.startComment}}">{{t.apprAddComment}}</button><button class="btn" sc-camel-on-click="{{closeAppr}}">{{t.close}}</button></div>
+</sc-if>
+</div></div>
+</sc-if>
+
+<sc-if value="{{showCreateAppr}}" hint-placeholder-val="{{false}}">
+<div class="ovl" sc-camel-on-click="{{closeCreateAppr}}"><div class="modal" sc-camel-on-click="{{stop}}">
+<div class="fx jb" style="align-items:flex-start;gap:14px"><h2 class="mtitle">{{t.createApprTitle}}</h2><button class="mclose" sc-camel-on-click="{{closeCreateAppr}}">×</button></div>
+<form sc-camel-on-submit="{{createApproval}}">
+<div class="field mt16"><label class="flab">{{t.apprFTitle}}</label><input class="inp" name="title" autofocus=""></div>
+<div class="fgrid mt16">
+<div class="field"><label class="flab">{{t.apprTeamL}}</label><input class="inp" name="team" sc-camel-default-value="{{apprPrefillTeam}}"></div>
+<div class="field"><label class="flab">{{t.apprByL}}</label><input class="inp" name="by"></div>
+</div>
+<div class="fgrid mt16">
+<div class="field"><label class="flab">{{t.apprPriorityL}}</label><sc-raw-select class="sel inp" name="priority"><sc-for list="{{apprPriorityOpts}}" as="o" hint-placeholder-count="3"><option value="{{o.v}}">{{o.t}}</option></sc-for></sc-raw-select></div>
+<div class="field"><label class="flab">{{t.due}}</label><input class="inp" name="due"></div>
+</div>
+<div class="field mt16"><label class="flab">{{t.apprDescL}}</label><textarea class="inp ta" name="desc"></textarea></div>
+<div class="field mt16"><label class="flab">{{t.apprAttachL}}</label><div class="uploadph uploadph-btn" sc-camel-on-click="{{pickApprFile}}"><span class="uploadph-ic">⬆</span>{{t.uploadPh}}</div><sc-if value="{{apprFileName}}" hint-placeholder-val="{{false}}"><div class="mut fs12" style="margin-top:6px">📎 {{apprFileName}}</div></sc-if></div>
+<div class="fx gap8 mt24" style="justify-content:flex-end"><button class="btn ghost" type="button" sc-camel-on-click="{{closeCreateAppr}}">{{t.cancel}}</button><button class="btn" type="submit">{{t.apprSubmit}}</button></div>
+</form>
+</div></div>
+</sc-if>
+
+<sc-if value="{{designModal}}" hint-placeholder-val="{{false}}">
+<div class="ovl" sc-camel-on-click="{{closeDesignSec}}"><div class="modal wide dmodal" sc-camel-on-click="{{stop}}">
+<div class="fx jb" style="align-items:flex-start;gap:14px"><div class="fx ac gap10"><span class="dcard-ic">{{designModal.icon}}</span><div><h2 class="mtitle">{{designModal.title}}</h2><div class="mut fs12" style="margin-top:4px">{{designModal.owner}} · {{t.updated}} {{designModal.updated}}</div></div></div><button class="mclose" sc-camel-on-click="{{closeDesignSec}}">×</button></div>
+
+<sc-if value="{{designModal.hasFiles}}" hint-placeholder-val="{{true}}">
+<div class="dgallery">
+<sc-for list="{{designModal.gallery}}" as="f" hint-placeholder-count="3">
+<div class="dgcard"><div class="dgcard-img"><span class="dthumb-ext">{{f.ext}}</span></div><div class="dgcard-body"><div class="dgcard-n">{{f.name}}</div><div class="mut fs12" style="margin-top:3px">{{f.type}} · {{f.date}} · {{f.by}}</div><div class="fx jb ac" style="margin-top:10px"><div class="fx gap8"><button class="btn ghost btn-sm" sc-camel-on-click="{{f.view}}">{{t.viewL}}</button><button class="btn ghost btn-sm" sc-camel-on-click="{{f.download}}">{{t.downloadL}}</button><sc-if value="{{canUploadDesign}}" hint-placeholder-val="{{false}}"><button class="btn ghost btn-sm btn-danger-ghost" sc-camel-on-click="{{f.remove}}">{{t.removeL}}</button></sc-if></div></div></div></div>
+</sc-for>
+</div>
+</sc-if>
+<sc-if value="{{designModal.noFiles}}" hint-placeholder-val="{{false}}"><div class="emptybox emptybox-sm"><div class="empty-t">{{t.designEmpty}}</div></div></sc-if>
+<sc-if value="{{canUploadDesign}}" hint-placeholder-val="{{false}}"><div class="uploadph uploadph-btn" sc-camel-on-click="{{designModal.upload}}"><span class="uploadph-ic">⬆</span>{{t.uploadPh}}</div></sc-if>
+<div class="fx gap8 mt20" style="justify-content:flex-end;margin-top:24px"><sc-if value="{{canUploadDesign}}" hint-placeholder-val="{{false}}"><button class="btn ghost" sc-camel-on-click="{{designModal.upload}}">{{t.uploadL}}</button></sc-if><button class="btn" sc-camel-on-click="{{closeDesignSec}}">{{t.close}}</button></div>
+</div></div>
+</sc-if>
+
+<sc-if value="{{deptEditModal}}" hint-placeholder-val="{{false}}">
+<div class="ovl" sc-camel-on-click="{{closeDeptEdit}}"><div class="modal wide" sc-camel-on-click="{{stop}}">
+<div class="fx jb" style="align-items:flex-start"><h2 class="mtitle">{{t.edit}}: {{deptEditModal.n}}</h2><button class="mclose" sc-camel-on-click="{{closeDeptEdit}}">×</button></div>
+<form sc-camel-on-submit="{{saveDeptEdit}}">
+<div class="fgrid mt16">
+<div class="field"><label class="flab">{{t.orgTitle}}</label><input class="inp" name="n" sc-camel-default-value="{{deptEditModal.n}}"></div>
+<div class="field"><label class="flab">{{t.fStatus}}</label><sc-raw-select class="sel inp" name="s" sc-camel-default-value="{{deptEditModal.s}}"><sc-for list="{{deptEditModal.statusOpts}}" as="o" hint-placeholder-count="3"><option value="{{o.v}}" selected="{{o.sel}}">{{o.t}}</option></sc-for></sc-raw-select></div>
+<div class="field"><label class="flab">{{t.lead}}</label><input class="inp" name="leadN" sc-camel-default-value="{{deptEditModal.leadN}}"></div>
+<div class="field"><label class="flab">{{t.lead}} — {{t.roleLabel}}</label><input class="inp" name="leadT" sc-camel-default-value="{{deptEditModal.leadT}}"></div>
+<div class="field"><label class="flab">{{t.deputy}}</label><input class="inp" name="depN" sc-camel-default-value="{{deptEditModal.depN}}"></div>
+<div class="field"><label class="flab">{{t.deputy}} — {{t.roleLabel}}</label><input class="inp" name="depT" sc-camel-default-value="{{deptEditModal.depT}}"></div>
+<div class="field"><label class="flab">{{t.updated}}</label><input class="inp" name="u" sc-camel-default-value="{{deptEditModal.u}}"></div>
+</div>
+<div class="field mt16"><label class="flab">{{t.detUpdates}}</label><textarea class="inp ta" name="upd" sc-camel-default-value="{{deptEditModal.updText}}"></textarea></div>
+<div class="field mt16"><label class="flab">{{t.detChallenges}}</label><textarea class="inp ta" name="chal" sc-camel-default-value="{{deptEditModal.chalText}}"></textarea></div>
+<div class="fgrid mt16">
+<div class="field"><label class="flab">{{t.apprItem}}</label><input class="inp" name="apprItem" sc-camel-default-value="{{deptEditModal.apprItem}}"></div>
+<div class="field"><label class="flab">{{t.reqDec}}</label><input class="inp" name="apprDec" sc-camel-default-value="{{deptEditModal.apprDec}}"></div>
+<div class="field"><label class="flab">{{t.owner}}</label><input class="inp" name="apprOwner" sc-camel-default-value="{{deptEditModal.apprOwner}}"></div>
+<div class="field"><label class="flab">{{t.dueDate}}</label><input class="inp" name="apprDue" sc-camel-default-value="{{deptEditModal.apprDue}}"></div>
+<div class="field"><label class="flab">{{t.recAction}}</label><input class="inp" name="nextAction" sc-camel-default-value="{{deptEditModal.nextAction}}"></div>
+<div class="field"><label class="flab">{{t.responsible}}</label><input class="inp" name="nextWho" sc-camel-default-value="{{deptEditModal.nextWho}}"></div>
+</div>
+<div class="field mt16" style="max-width:220px"><label class="flab">{{t.detNext}} — {{t.dueDate}}</label><input class="inp" name="nextDue" sc-camel-default-value="{{deptEditModal.nextDue}}"></div>
+<div class="fx gap8 mt24" style="justify-content:flex-end"><button class="btn ghost" type="button" sc-camel-on-click="{{closeDeptEdit}}">{{t.cancel}}</button><button class="btn" type="submit">{{t.saveChanges}}</button></div>
+</form></div></div>
+</sc-if>
+<sc-if value="{{admin}}" hint-placeholder-val="{{false}}"><div class="editflag"><span class="adot2"></span>{{t.adminMode}}</div></sc-if>
+
+<sc-if value="{{showAddTeam}}" hint-placeholder-val="{{false}}">
+<div class="ovl" sc-camel-on-click="{{closeAddTeam}}"><div class="modal" sc-camel-on-click="{{stop}}">
+<div class="fx jb" style="align-items:flex-start;gap:14px"><h2 class="mtitle">{{t.addTeamL}}</h2><button class="mclose" sc-camel-on-click="{{closeAddTeam}}">×</button></div>
+<form sc-camel-on-submit="{{createTeam}}">
+<div class="fgrid mt16"><div class="field"><label class="flab">{{t.teamNameL}}</label><input class="inp" name="en" list="streamlines" autofocus=""></div><div class="field"><label class="flab">{{t.teamNameArL}}</label><input class="inp" name="ar" dir="rtl"></div></div>
+<datalist id="streamlines"><sc-for list="{{streamlineOpts}}" as="o" hint-placeholder-count="4"><option value="{{o.t}}"></option></sc-for></datalist>
+<div class="fgrid mt16"><div class="field"><label class="flab">{{t.lead}}</label><input class="inp" name="lead"></div><div class="field"><label class="flab">{{t.deputy}}</label><input class="inp" name="dep"></div></div>
+<div class="fgrid mt16"><div class="field"><label class="flab">{{t.fStatus}}</label><sc-raw-select class="sel inp" name="status"><sc-for list="{{statusFormOpts}}" as="o" hint-placeholder-count="3"><option value="{{o.v}}">{{o.t}}</option></sc-for></sc-raw-select></div><div class="field"><label class="flab">{{t.fProg}}</label><input class="inp" name="p" type="number" min="0" max="100" placeholder="0–100"></div></div>
+<div class="fgrid mt16"><div class="field"><label class="flab">{{t.nextDue}}</label><input class="inp" name="due"></div><div class="field"><label class="flab">{{t.updated}}</label><input class="inp" name="u"></div></div>
+<div class="fx gap8 mt24" style="justify-content:flex-end"><button class="btn ghost" type="button" sc-camel-on-click="{{closeAddTeam}}">{{t.cancel}}</button><button class="btn" type="submit">{{t.addTeamL}}</button></div>
+</form></div></div>
+</sc-if>
+
+<sc-if value="{{isDash}}" hint-placeholder-val="{{false}}">
+<sc-if value="{{noTeamView}}" hint-placeholder-val="{{true}}">
+<main class="pg wrap" data-screen-label="Operational Tracker">
+<div class="phead"><div><h1 class="ptitle">{{t.dashTitle}}</h1><p class="psub">{{t.dashSub}}</p></div>
+<div class="fx ac gap10 wrap"><sc-if value="{{admin}}" hint-placeholder-val="{{false}}"><button class="btn ghost" sc-camel-on-click="{{pickEmpDir}}"><svg sc-camel-view-box="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-inline-end:6px;vertical-align:-2px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="M17 8l-5-5-5 5M12 3v12"></path></svg>{{t.empDirUploadL}}<sc-if value="{{empDirLoaded}}" hint-placeholder-val="{{false}}"><span style="margin-inline-start:7px;background:var(--acc);color:#fff;border-radius:999px;padding:1px 8px;font-size:10.5px">{{empDirCountL}}</span></sc-if></button></sc-if><sc-if value="{{hasTeams}}" hint-placeholder-val="{{true}}"></sc-if><sc-if value="{{blankAdmin}}" hint-placeholder-val="{{false}}"><button class="btn ghost" sc-camel-on-click="{{importTeams}}">{{t.importL}}</button><button class="btn" sc-camel-on-click="{{openAddTeam}}">{{t.addTeamL}}</button></sc-if></div><sc-if value="{{canExec}}" hint-placeholder-val="{{true}}"><button class="btn" sc-camel-on-click="{{openGuide}}">{{t.genGuide}}</button></sc-if></div>
+<sc-if value="{{hasCustomTeams}}" hint-placeholder-val="{{false}}"><div class="deptgrid"><sc-for list="{{customTeams}}" as="tm" hint-placeholder-count="3">
+<div class="deptcard {{tm.tcCls}}">
+<div class="fx jb ac gap8"><div class="deptname">{{tm.n}}</div><div class="fx ac gap8"><sc-if value="{{admin}}" hint-placeholder-val="{{false}}"><button class="editbtn" sc-camel-on-click="{{tm.remove}}">{{t.removeL}}</button></sc-if><span class="pill {{tm.pill}}"><span class="dot"></span>{{tm.sl}}</span></div></div>
+<div class="deptleads"><div class="deptp"><div class="leadav">{{tm.leadInit}}</div><div class="deptpinfo"><div class="leadname">{{tm.leadN}}</div><div class="deptrole">{{t.teamLead}}</div></div></div><div class="deptp"><div class="leadav dep">{{tm.depInit}}</div><div class="deptpinfo"><div class="leadname">{{tm.depN}}</div><div class="deptrole">{{t.deputy}}</div></div></div></div>
+<div class="tcfoot2"><div class="tcprog"><div class="tcbar"><span style="width:{{tm.p}}%;background:var(--acc)"></span></div><span class="tcpct">{{tm.p}}%</span></div></div>
+<div class="opcardfoot"><span class="mut fs12">{{t.updated}} {{tm.u}}</span></div>
+</div>
+</sc-for></div></sc-if>
+<sc-if value="{{hasMyDepts}}" hint-placeholder-val="{{false}}">
+<div class="strsec" style="margin-top:4px">{{t.myStreamsSec}}</div>
+<div class="deptgrid"><sc-for list="{{myDepts}}" as="tm" hint-placeholder-count="1">
+<div class="deptcard {{tm.tcCls}}" sc-camel-on-click="{{tm.open}}">
+<div class="fx jb ac gap8"><div class="deptname">{{tm.n}}</div><span class="pill {{tm.pill}}"><span class="dot"></span>{{tm.sl}}</span></div>
+<div class="tcupd">
+<div class="tcupd-h"><span class="tceyebrow">{{t.latestUpdL}}</span><span class="tcupd-date">{{t.updated}} {{tm.u}}</span></div>
+<sc-if value="{{tm.hasLatestUpd}}" hint-placeholder-val="{{true}}"><div class="tcupd-body">{{tm.latestUpd}}</div></sc-if>
+<sc-if value="{{tm.noLatestUpd}}" hint-placeholder-val="{{false}}"><div class="tcupd-body tcupd-empty">{{t.noUpdYet}}</div></sc-if>
+</div>
+<div class="tclead">
+<div class="tceyebrow" style="margin-bottom:11px">{{t.leadershipL}}</div>
+<div class="tcchips">
+<div class="tcchip"><div class="tcchip-av {{tm.leadPhoto.cls}}"><sc-if value="{{tm.leadPhoto.hasPhoto}}" hint-placeholder-val="{{false}}">{{tm.leadPhoto.imgEl}}</sc-if><sc-if value="{{tm.leadNoPhoto}}" hint-placeholder-val="{{true}}"><span>{{tm.leadPhoto.init}}</span></sc-if></div><div class="tcchip-x"><span class="tcchip-n">{{tm.leadN}}</span><span class="tcchip-r">{{t.teamLead}}</span></div></div>
+<div class="tcchip"><div class="tcchip-av dep {{tm.depPhoto.cls}}"><sc-if value="{{tm.depPhoto.hasPhoto}}" hint-placeholder-val="{{false}}">{{tm.depPhoto.imgEl}}</sc-if><sc-if value="{{tm.depNoPhoto}}" hint-placeholder-val="{{true}}"><span>{{tm.depPhoto.init}}</span></sc-if></div><div class="tcchip-x"><span class="tcchip-n">{{tm.depN}}</span><span class="tcchip-r">{{t.deputy}}</span></div></div>
+</div>
+</div>
+<div class="tcfoot3">
+<span class="tcpct">{{tm.p}}%</span>
+<div class="tcbar"><span style="width:{{tm.p}}%;background:var(--acc)"></span></div>
+<span class="mut fs12" style="white-space:nowrap;margin-inline-start:auto">· {{tm.openCount}} {{t.openItems}}</span>
+</div>
+</div>
+</sc-for></div>
+<div class="strsec">{{t.otherStreamsSec}}</div>
+<div class="deptgrid"><sc-for list="{{otherDepts}}" as="tm" hint-placeholder-count="5">
+<div class="deptcard {{tm.tcCls}}" sc-camel-on-click="{{tm.open}}">
+<div class="fx jb ac gap8"><div class="deptname">{{tm.n}}</div><span class="pill {{tm.pill}}"><span class="dot"></span>{{tm.sl}}</span></div>
+<div class="tcupd">
+<div class="tcupd-h"><span class="tceyebrow">{{t.latestUpdL}}</span><span class="tcupd-date">{{t.updated}} {{tm.u}}</span></div>
+<sc-if value="{{tm.hasLatestUpd}}" hint-placeholder-val="{{true}}"><div class="tcupd-body">{{tm.latestUpd}}</div></sc-if>
+<sc-if value="{{tm.noLatestUpd}}" hint-placeholder-val="{{false}}"><div class="tcupd-body tcupd-empty">{{t.noUpdYet}}</div></sc-if>
+</div>
+<div class="tclead">
+<div class="tceyebrow" style="margin-bottom:11px">{{t.leadershipL}}</div>
+<div class="tcchips">
+<div class="tcchip"><div class="tcchip-av {{tm.leadPhoto.cls}}"><sc-if value="{{tm.leadPhoto.hasPhoto}}" hint-placeholder-val="{{false}}">{{tm.leadPhoto.imgEl}}</sc-if><sc-if value="{{tm.leadNoPhoto}}" hint-placeholder-val="{{true}}"><span>{{tm.leadPhoto.init}}</span></sc-if></div><div class="tcchip-x"><span class="tcchip-n">{{tm.leadN}}</span><span class="tcchip-r">{{t.teamLead}}</span></div></div>
+<div class="tcchip"><div class="tcchip-av dep {{tm.depPhoto.cls}}"><sc-if value="{{tm.depPhoto.hasPhoto}}" hint-placeholder-val="{{false}}">{{tm.depPhoto.imgEl}}</sc-if><sc-if value="{{tm.depNoPhoto}}" hint-placeholder-val="{{true}}"><span>{{tm.depPhoto.init}}</span></sc-if></div><div class="tcchip-x"><span class="tcchip-n">{{tm.depN}}</span><span class="tcchip-r">{{t.deputy}}</span></div></div>
+</div>
+</div>
+<div class="tcfoot3">
+<span class="tcpct">{{tm.p}}%</span>
+<div class="tcbar"><span style="width:{{tm.p}}%;background:var(--acc)"></span></div>
+<span class="mut fs12" style="white-space:nowrap;margin-inline-start:auto">· {{tm.openCount}} {{t.openItems}}</span>
+</div>
+</div>
+</sc-for></div>
+</sc-if>
+<sc-if value="{{noMyDepts}}" hint-placeholder-val="{{true}}">
+<div class="deptgrid"><sc-for list="{{depts}}" as="tm" hint-placeholder-count="6">
+<div class="deptcard {{tm.tcCls}}" sc-camel-on-click="{{tm.open}}">
+<div class="fx jb ac gap8"><div class="deptname">{{tm.n}}</div><span class="pill {{tm.pill}}"><span class="dot"></span>{{tm.sl}}</span></div>
+<div class="tcupd">
+<div class="tcupd-h"><span class="tceyebrow">{{t.latestUpdL}}</span><span class="tcupd-date">{{t.updated}} {{tm.u}}</span></div>
+<sc-if value="{{tm.hasLatestUpd}}" hint-placeholder-val="{{true}}"><div class="tcupd-body">{{tm.latestUpd}}</div></sc-if>
+<sc-if value="{{tm.noLatestUpd}}" hint-placeholder-val="{{false}}"><div class="tcupd-body tcupd-empty">{{t.noUpdYet}}</div></sc-if>
+</div>
+<div class="tclead">
+<div class="tceyebrow" style="margin-bottom:11px">{{t.leadershipL}}</div>
+<div class="tcchips">
+<div class="tcchip"><div class="tcchip-av {{tm.leadPhoto.cls}}"><sc-if value="{{tm.leadPhoto.hasPhoto}}" hint-placeholder-val="{{false}}">{{tm.leadPhoto.imgEl}}</sc-if><sc-if value="{{tm.leadNoPhoto}}" hint-placeholder-val="{{true}}"><span>{{tm.leadPhoto.init}}</span></sc-if></div><div class="tcchip-x"><span class="tcchip-n">{{tm.leadN}}</span><span class="tcchip-r">{{t.teamLead}}</span></div></div>
+<div class="tcchip"><div class="tcchip-av dep {{tm.depPhoto.cls}}"><sc-if value="{{tm.depPhoto.hasPhoto}}" hint-placeholder-val="{{false}}">{{tm.depPhoto.imgEl}}</sc-if><sc-if value="{{tm.depNoPhoto}}" hint-placeholder-val="{{true}}"><span>{{tm.depPhoto.init}}</span></sc-if></div><div class="tcchip-x"><span class="tcchip-n">{{tm.depN}}</span><span class="tcchip-r">{{t.deputy}}</span></div></div>
+</div>
+</div>
+<div class="tcfoot3">
+<span class="tcpct">{{tm.p}}%</span>
+<div class="tcbar"><span style="width:{{tm.p}}%;background:var(--acc)"></span></div>
+<span class="mut fs12" style="white-space:nowrap;margin-inline-start:auto">· {{tm.openCount}} {{t.openItems}}</span>
+</div>
+</div>
+</sc-for></div>
+</sc-if>
+<sc-if value="{{showZero}}" hint-placeholder-val="{{false}}"><div class="zero"><div class="zero-ic">▤</div><div class="zero-t">{{t.emptyOps}}</div><div class="zero-s">{{t.zeroSub}}</div><sc-if value="{{admin}}" hint-placeholder-val="{{false}}"><div class="zero-actions"><button class="btn" sc-camel-on-click="{{openAddTeam}}">{{t.addTeamL}}</button><button class="btn ghost" sc-camel-on-click="{{importTeams}}">{{t.importL}}</button></div></sc-if><sc-if value="{{notAdmin}}" hint-placeholder-val="{{true}}"><div class="zero-locked">{{t.zeroLocked}}</div></sc-if></div></sc-if>
+</main>
+</sc-if>
+<sc-if value="{{teamView}}" hint-placeholder-val="{{false}}">
+<sc-if value="{{notTaskFull}}" hint-placeholder-val="{{true}}">
+<main class="pg wrap" data-screen-label="Team Detail">
+<div class="card tvhead {{teamView.tcCls}}">
+<div class="tvhead-l">
+<div class="detname">{{teamView.n}}</div>
+<div class="fx ac gap10 mt8"><span class="pill {{teamView.pill}}"><span class="dot"></span>{{teamView.sl}}</span><span class="mut fs12">{{t.updated}} {{teamView.u}}</span></div>
+</div>
+<div class="tvactions"><sc-if value="{{teamView.canEdit}}" hint-placeholder-val="{{false}}"><button class="sharebtn" sc-camel-on-click="{{teamView.edit}}"><svg sc-camel-view-box="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"></path></svg>{{t.edit}}</button></sc-if><button class="sharebtn sharebtn-lg" sc-camel-on-click="{{teamView.sharePdf}}"><svg sc-camel-view-box="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3"></path><path d="M8 7l4-4 4 4"></path><path d="M4 13v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6"></path></svg>{{t.shareL}}</button></div>
+</div>
+<div class="card mt14"><div class="wfhead"><div class="det2lab" style="margin-bottom:0">{{t.orgTitle}}</div><sc-if value="{{teamView.canEdit}}" hint-placeholder-val="{{false}}"><div class="wfbtns"><button class="wfbtn" sc-camel-on-click="{{teamView.openAdd}}" title="{{t.addMemberL}}" aria-label="{{t.addMemberL}}">+</button></div></sc-if></div>
+<div class="det2force"><sc-for list="{{teamView.wf}}" as="p" hint-placeholder-count="4"><div class="det2person {{p.editCls}}" sc-camel-on-click="{{p.edit}}"><div class="det2pav {{p.cls}}" style="{{p.style}}"><sc-if value="{{p.hasPhoto}}" hint-placeholder-val="{{false}}">{{p.imgEl}}</sc-if><sc-if value="{{p.noPhoto}}" hint-placeholder-val="{{true}}"><span>{{p.init}}</span></sc-if><sc-if value="{{p.isAdmin}}" hint-placeholder-val="{{false}}"><span class="wfedit-badge"><svg sc-camel-view-box="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"></path></svg></span></sc-if></div><div class="det2pn">{{p.n}}</div><div class="det2pr">{{p.role}}</div></div></sc-for></div>
+<sc-if value="{{teamView.hasNoms}}" hint-placeholder-val="{{false}}">
+<div class="mt14" style="border-top:1px dashed var(--line);padding-top:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+<span class="pill pg-a"><span class="dot"></span>{{teamView.nomCountL}}</span>
+<span class="mut fs12">{{t.nomInExecL}}</span>
+</div>
+</sc-if>
+</div>
+<div class="opblocks mt14">
+<div class="card opblock op-span"><div class="fx jb ac gap8"><div class="det2lab" style="margin-bottom:0">{{t.opTracker}}</div><div class="fx ac gap8"><div class="lang" style="margin:0"><button type="button" class="lbtn {{trkTableCls}}" sc-camel-on-click="{{trkSetTable}}"><svg sc-camel-view-box="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="margin-inline-end:5px;vertical-align:-1px"><path d="M4 6h16M4 12h16M4 18h16"></path></svg>{{t.trkViewTable}}</button><button type="button" class="lbtn {{trkCardsCls}}" sc-camel-on-click="{{trkSetCards}}"><svg sc-camel-view-box="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" style="margin-inline-end:5px;vertical-align:-1px"><rect x="3" y="3" width="8" height="8" rx="1.5"></rect><rect x="13" y="3" width="8" height="8" rx="1.5"></rect><rect x="3" y="13" width="8" height="8" rx="1.5"></rect><rect x="13" y="13" width="8" height="8" rx="1.5"></rect></svg>{{t.trkViewCards}}</button></div><sc-if value="{{teamView.canEdit}}" hint-placeholder-val="{{false}}"><button class="logaddbtn" type="button" sc-camel-on-click="{{teamView.openTaskAdd}}">+ {{t.taskAddL}}</button></sc-if></div></div>
+<sc-if value="{{trkCards}}" hint-placeholder-val="{{false}}">
+<div class="trkcards">
+<sc-for list="{{teamView.actionsPreview}}" as="a" hint-placeholder-count="3">
+<div class="trkcard" sc-camel-on-click="{{a.open}}">
+<div class="fx jb gap8" style="align-items:flex-start"><div class="fw6" style="font-size:13.5px;line-height:1.45;flex:1">{{a.t}}</div><sc-if value="{{teamView.canEdit}}" hint-placeholder-val="{{false}}"><button class="taskeditbtn" style="opacity:1;flex:none" type="button" title="{{t.taskEditT}}" sc-camel-on-click="{{a.editTask}}"><svg sc-camel-view-box="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"></path></svg></button></sc-if></div>
+<div class="fx ac gap8" style="flex-wrap:wrap;margin-top:10px"><span class="pill {{a.pill}}"><span class="dot"></span>{{a.sl}}</span><span class="pill {{a.apPill}}">{{a.apL}}</span><sc-if value="{{a.hasMt}}" hint-placeholder-val="{{false}}"><button class="mtchip" style="margin-top:0" type="button" sc-camel-on-click="{{a.openMt}}"><svg sc-camel-view-box="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18"></path></svg>{{t.mtChipL}}</button></sc-if></div>
+<div class="trkcard-rows">
+<div class="trkcard-row"><span class="trkcard-k">{{t.owner}}</span><span class="trkcard-v">{{a.o}}</span></div>
+<div class="trkcard-row"><span class="trkcard-k">{{t.due}}</span><span class="trkcard-v due">{{a.d}}</span></div>
+<div class="trkcard-row"><span class="trkcard-k">{{t.thNext}}</span><span class="trkcard-v">{{a.nx}}</span></div>
+<div class="trkcard-row"><span class="trkcard-k">{{t.thChal}}</span><span class="trkcard-v">{{a.chv}}</span></div>
+</div>
+</div>
+</sc-for>
+</div>
+</sc-if>
+<sc-if value="{{trkTable}}" hint-placeholder-val="{{true}}">
+<div class="optable">
+<div class="opthead"><span>{{t.thAction}}</span><span>{{t.owner}}</span><span>{{t.fStatus}}</span><span>{{t.thApproval}}</span><span>{{t.due}}</span><span>{{t.thNext}}</span><span>{{t.thChal}}</span><span></span></div>
+<sc-for list="{{teamView.actionsPreview}}" as="a" hint-placeholder-count="3"><div class="optrow" sc-camel-on-click="{{a.open}}"><span class="fw6">{{a.t}}<sc-if value="{{a.hasMt}}" hint-placeholder-val="{{false}}"><button class="mtchip" type="button" sc-camel-on-click="{{a.openMt}}"><svg sc-camel-view-box="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18"></path></svg>{{t.mtChipL}}</button></sc-if></span><span>{{a.o}}</span><span class="pill {{a.pill}}"><span class="dot"></span>{{a.sl}}</span><span class="pill {{a.apPill}}">{{a.apL}}</span><span class="due">{{a.d}}</span><span>{{a.nx}}</span><span>{{a.chv}}</span><span class="taskacts"><sc-if value="{{teamView.canEdit}}" hint-placeholder-val="{{false}}"><button class="taskeditbtn" type="button" title="{{t.taskEditT}}" sc-camel-on-click="{{a.editTask}}"><svg sc-camel-view-box="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"></path></svg></button></sc-if></span></div></sc-for>
+</div>
+</sc-if>
+<button class="tv-morebtn" type="button" sc-camel-on-click="{{teamView.openTaskFull}}">{{teamView.viewAllLabel}}</button>
+</div>
+</div>
+
+<sc-if value="{{teamView.isBudget}}" hint-placeholder-val="{{false}}">
+<div class="card mt14"><div class="det2lab">{{t.budgetTitle}}</div>
+<sc-if value="{{admin}}" hint-placeholder-val="{{false}}"><div class="budgrid"><sc-for list="{{teamView.budgetRows}}" as="b" hint-placeholder-count="4"><div class="budrow"><span>{{b.lab}}</span><span class="due">{{b.val}}</span></div></sc-for></div></sc-if>
+<sc-if value="{{notAdmin}}" hint-placeholder-val="{{true}}"><div class="lockedbudget"><span class="lockedbudget-ic">🔒</span>{{t.budgetLocked}}</div></sc-if>
+</div>
+</sc-if>
+
+</main>
+</sc-if>
+<sc-if value="{{taskFull}}" hint-placeholder-val="{{false}}">
+<main class="pg wrap" data-screen-label="Team Tasks">
+<div class="tvtopbar"><button class="backbtn" sc-camel-on-click="{{closeTaskFull}}">{{t.backToTeam}}</button></div>
+<div class="phead"><div><h1 class="ptitle">{{teamView.n}}</h1><p class="psub">{{t.allTasksSub}}</p></div><sc-if value="{{teamView.canEdit}}" hint-placeholder-val="{{false}}"><button class="btn" sc-camel-on-click="{{teamView.openTaskAdd}}"><span class="btnplus">+</span>{{t.taskAddL}}</button></sc-if></div>
+<div class="card">
+<div class="optable">
+<div class="opthead"><span>{{t.thAction}}</span><span>{{t.owner}}</span><span>{{t.fStatus}}</span><span>{{t.thApproval}}</span><span>{{t.due}}</span><span>{{t.thNext}}</span><span>{{t.thChal}}</span><span></span></div>
+<sc-for list="{{teamView.actions}}" as="a" hint-placeholder-count="3"><div class="optrow" sc-camel-on-click="{{a.open}}"><span class="fw6">{{a.t}}<sc-if value="{{a.hasMt}}" hint-placeholder-val="{{false}}"><button class="mtchip" type="button" sc-camel-on-click="{{a.openMt}}"><svg sc-camel-view-box="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18"></path></svg>{{t.mtChipL}}</button></sc-if></span><span>{{a.o}}</span><span class="pill {{a.pill}}"><span class="dot"></span>{{a.sl}}</span><span class="pill {{a.apPill}}">{{a.apL}}</span><span class="due">{{a.d}}</span><span>{{a.nx}}</span><span>{{a.chv}}</span><span class="taskacts"><sc-if value="{{teamView.canEdit}}" hint-placeholder-val="{{false}}"><button class="taskeditbtn" type="button" title="{{t.taskEditT}}" sc-camel-on-click="{{a.editTask}}"><svg sc-camel-view-box="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"></path></svg></button></sc-if></span></div></sc-for>
+</div>
+</div>
+</main>
+</sc-if>
+</sc-if>
+</sc-if>
+
+<sc-if value="{{isTeams}}" hint-placeholder-val="{{false}}">
+<main class="pg wrap" data-screen-label="Teams and Workstreams">
+<div class="phead"><div><h1 class="ptitle">{{t.teamsTitle}}</h1><p class="psub">{{t.teamsSub}}</p></div></div>
+<div class="card pmband"><div class="avatar">KA</div><div><div class="pmname">{{t.pmName}}</div><div class="pmrole">{{t.pmRole}}</div></div>
+<div class="pmdiv"><div class="avatar">FA</div><div><div class="pmname" style="font-size:15px">{{t.chiefName}}</div><div class="pmrole">{{t.chiefRole}}</div></div></div>
+<div class="pmnote">{{t.pmNoteBand}}</div></div>
+<div class="tgrid"><sc-for list="{{wsCards}}" as="w" hint-placeholder-count="6">
+<div class="card"><div class="wtop"><div><div class="wname" style="font-size:15.5px">{{w.n}}</div><div class="mut" style="font-size:11.5px;margin-top:2px">{{t.lead}}: <strong style="color:var(--ink)">{{w.o}}</strong> · {{t.deputy}}: {{w.dep}}</div></div><span class="pill {{w.pill}}"><span class="dot"></span>{{w.sl}}</span></div>
+<div class="trow mt12"><div class="bar"><div class="barfill" style="width:{{w.p}}%"></div></div><span style="font-size:11px;font-weight:600">{{w.p}}%</span></div>
+<div class="wrow mt8"><div class="wlab">{{t.resp}}</div><div class="wtxt">{{w.resp}}</div></div>
+<div class="wrow"><div class="wlab">{{t.risksL}}</div><div class="wtxt">{{w.rk}}</div></div>
+<div class="wrow"><div class="wlab">{{t.pendAppr}}</div><div class="wtxt">{{w.ap}}</div></div>
+<div class="wrow"><div class="wlab">{{t.nextMs}}</div><div class="wtxt fw6">{{w.ms}}</div></div></div>
+</sc-for></div>
+</main>
+</sc-if>
+
+<sc-if value="{{isTimeline}}" hint-placeholder-val="{{false}}">
+<main class="pg wrap" data-screen-label="Event Timeline">
+<div class="phead"><div><h1 class="ptitle">{{t.tlTitle}}</h1><p class="psub">{{t.tlSub}}</p></div><div class="fx ac gap10 wrap"><sc-if value="{{isWef}}" hint-placeholder-val="{{true}}"><div class="cdbox" style="border-color:var(--line);background:#fff"><span class="cdn" style="color:var(--ink)">{{cdDays}}</span><span class="cdl" style="color:var(--mut)">{{t.daysToWef}}</span></div></sc-if><sc-if value="{{hasTimeline}}" hint-placeholder-val="{{true}}"><button class="btn" sc-camel-on-click="{{doPrint}}">{{t.exportTimeline}}</button></sc-if><sc-if value="{{tlAdmin}}" hint-placeholder-val="{{false}}"><button class="btn ghost" sc-camel-on-click="{{toggleTlMode}}">{{tlModeLabel}}</button></sc-if></div></div>
+<div class="agenda"><sc-for list="{{eventDays}}" as="d" hint-placeholder-count="4">
+<div class="agrow">
+<div class="agdate"><div class="agdatebig">{{d.date}}</div><div class="agday">{{d.day}}</div></div>
+<div class="agcard">
+<div class="agcardhead"><span class="aghicon">{{d.iconEl}}</span><span class="agtitle">{{d.day}}</span><sc-if value="{{d.editable}}" hint-placeholder-val="{{false}}"><button class="tl-editchip" sc-camel-on-click="{{d.editDay}}">✎ {{t.editDayL}}</button></sc-if><sc-if value="{{d.hasTag}}" hint-placeholder-val="{{false}}"><span class="agtagline">{{d.tagline}}</span></sc-if></div>
+<sc-if value="{{d.hasBlocks}}" hint-placeholder-val="{{true}}"><div class="agblocks"><sc-for list="{{d.blocks}}" as="b" hint-placeholder-count="3"><div class="agblock {{b.editCls}}" sc-camel-on-click="{{b.open}}"><div class="agtime">{{b.time}}</div><div class="agbrow"><span class="agbicon">{{b.iconEl}}</span><div><div class="agbt">{{b.t}}</div><sc-if value="{{b.hasSub}}" hint-placeholder-val="{{false}}"><div class="agbsub">{{b.sub}}</div></sc-if></div></div></div></sc-for></div></sc-if>
+<sc-if value="{{d.desc}}" hint-placeholder-val="{{false}}"><div class="agdesc">{{d.desc}}</div></sc-if>
+</div>
+</div>
+</sc-for></div>
+<sc-if value="{{emptyTimeline}}" hint-placeholder-val="{{false}}"><div class="blankstate"><div class="blankstate-ic">◷</div><div class="blankstate-t">{{t.emptyTimelineL}}</div></div></sc-if>
+</main>
+</sc-if>
+
+<sc-if value="{{isRisks}}" hint-placeholder-val="{{false}}">
+<main class="pg wrap" data-screen-label="Risks and Blockers">
+<div class="phead"><div><h1 class="ptitle">{{t.rTitle}}</h1><p class="psub">{{t.rSub}}</p></div>
+<div class="chips"><sc-for list="{{sevChips}}" as="c" hint-placeholder-count="4"><button class="chip {{c.cls}}" sc-camel-on-click="{{c.go}}">{{c.label}}</button></sc-for></div></div>
+<div class="two" style="grid-template-columns:2.2fr 1fr;margin-top:0">
+<div class="rgrid" style="margin-top:0"><sc-for list="{{riskCards}}" as="r" hint-placeholder-count="4">
+<div class="card {{r.cardCls}}"><div class="wtop"><span class="sev {{r.sevCls}}">{{r.sev}}</span><span class="tag">{{r.st}}</span></div>
+<div class="wname mt8" style="font-size:15.5px">{{r.t}}</div><div class="mut" style="font-size:11.5px;margin-top:3px">{{r.w}} · {{t.owner}}: <strong style="color:var(--ink)">{{r.o}}</strong></div>
+<div class="rmeta"><div><div class="rlab">{{t.impactL}}</div><div class="rtxt">{{r.imp}}</div></div><div><div class="rlab">{{t.mitig}}</div><div class="rtxt">{{r.mit}}</div></div><div><div class="rlab">{{t.reqDec}}</div><div class="rtxt fw6">{{r.dec}}</div></div><div><div class="rlab">{{t.dueDate}}</div><div class="due" style="margin-top:6px">{{r.d}}</div></div></div></div>
+</sc-for></div>
+<div><div class="card"><div class="eyebrow">{{t.heatmap}}</div><div class="mut" style="font-size:11px;margin-top:4px">{{t.heatSub}}</div>
+<div class="heat"><sc-for list="{{heat}}" as="h" hint-placeholder-count="9"><div class="hcell {{h.cls}}">{{h.n}}</div></sc-for></div>
+<div class="fx jb mt8"><span class="hax">{{t.likelihood}}</span><span class="hax">{{t.impactL}}</span></div></div>
+<div class="card mt12"><div class="eyebrow">{{t.regSum}}</div>
+<sc-for list="{{regRows}}" as="rr" hint-placeholder-count="4"><div class="wrow"><div class="fx jb"><span class="wtxt">{{rr.lab}}</span><span class="due" style="color:{{rr.c}}">{{rr.val}}</span></div></div></sc-for></div></div>
+</div>
+</main>
+</sc-if>
+
+<sc-if value="{{isDecisions}}" hint-placeholder-val="{{false}}">
+<main class="pg wrap" data-screen-label="Pending Decisions">
+<div class="phead"><div><h1 class="ptitle">{{t.dTitle}}</h1><p class="psub">{{t.dSub}}</p></div><span class="pill pg-a"><span class="dot"></span>{{t.awaiting}}</span></div>
+<div class="rgrid" style="margin-top:0"><sc-for list="{{decisions}}" as="d" hint-placeholder-count="6">
+<div class="card dcard"><div class="wtop"><div class="wname" style="font-size:15.5px">{{d.t}}</div><span class="due noshrink">{{d.dl}}</span></div>
+<div class="mut" style="font-size:11.5px;margin-top:3px">{{t.owner}}: <strong style="color:var(--ink)">{{d.o}}</strong> · {{d.st}}</div>
+<div class="rlab mt8">{{t.background}}</div><div class="rtxt">{{d.bg}}</div>
+<div class="rlab">{{t.options}}</div>
+<sc-for list="{{d.opts}}" as="op" hint-placeholder-count="2"><div class="dopt {{op.cls}}"><span class="optb">{{op.b}}</span>{{op.t}}</div></sc-for>
+<div class="rmeta" style="grid-template-columns:1fr 1fr"><div><div class="rlab">{{t.recAction}}</div><div class="rtxt fw6">{{d.rec}}</div></div><div><div class="rlab">{{t.impDelay}}</div><div class="rtxt">{{d.impd}}</div></div></div></div>
+</sc-for></div>
+</main>
+</sc-if>
+
+<sc-if value="{{isSubmit}}" hint-placeholder-val="{{false}}">
+<main class="pg wrap" data-screen-label="Updates Submission" style="max-width:960px">
+<div class="phead"><div><h1 class="ptitle">{{t.sTitle}}</h1><p class="psub">{{t.sSub}}</p></div></div>
+<sc-if value="{{submitWs}}" hint-placeholder-val="{{false}}"><div class="prefill"><span class="pdot"></span><span>{{t.prefillFor}} <strong>{{submitWs}}</strong></span></div></sc-if>
+<form class="card" style="padding:28px 32px" sc-camel-on-submit="{{submitUpdate}}">
+<div class="fgrid">
+<div class="field"><label class="flab">{{t.fWs}}</label><sc-raw-select class="sel inp" name="ws"><sc-for list="{{wsOptions}}" as="o" hint-placeholder-count="6"><option value="{{o.v}}" selected="{{o.sel}}">{{o.t}}</option></sc-for></sc-raw-select></div>
+<div class="field"><label class="flab">{{t.fProg}}</label><input class="inp" name="progress" type="number" min="0" max="100" placeholder="0–100"></div>
+<div class="field"><label class="flab">{{t.fStatus}}</label><sc-raw-select class="sel inp" name="status"><sc-for list="{{statusOpts}}" as="o" hint-placeholder-count="3"><option>{{o.t}}</option></sc-for></sc-raw-select></div>
+</div>
+<div class="field mt16"><label class="flab">{{t.fAch}}</label><textarea class="inp ta" name="ach" placeholder="{{t.phAch}}"></textarea></div>
+<div class="fgrid mt16">
+<div class="field"><label class="flab">{{t.fBlk}}</label><textarea class="inp ta" name="blockers"></textarea></div>
+<div class="field"><label class="flab">{{t.fRisks}}</label><textarea class="inp ta" name="risks"></textarea></div>
+<div class="field"><label class="flab">{{t.fBudget}}</label><textarea class="inp ta" name="budget"></textarea></div>
+<div class="field"><label class="flab">{{t.fAppr}}</label><textarea class="inp ta" name="approvals"></textarea></div>
+</div>
+<div class="fgrid mt16">
+<div class="field"><label class="flab">{{t.fNotes}}</label><input class="inp" name="notes" placeholder="{{t.phNotes}}"></div>
+<div class="field"><label class="flab">{{t.fDate}}</label><input class="inp" name="date" type="date" value="2026-07-02"></div>
+</div>
+<div class="tasksec mt24">
+<div class="fx jb ac gap8"><div><div class="flab" style="margin:0">{{t.addTasksL}}</div><p class="mut" style="font-size:12px;margin:4px 0 0">{{t.addTasksSub}}</p></div><button class="btn ghost btn-sm" type="button" sc-camel-on-click="{{addTaskDraft}}"><span class="btnplus">+</span>{{t.addTaskBtn}}</button></div>
+<sc-if value="{{hasTaskDrafts}}" hint-placeholder-val="{{false}}">
+<div class="taskdrafts mt14">
+<sc-for list="{{taskDraftRows}}" as="r" hint-placeholder-count="1">
+<div class="taskdraft">
+<div class="taskdraft-h"><span class="taskdraft-n">{{t.taskNL}} {{r.num}}</span><button class="taskdraft-x" type="button" sc-camel-on-click="{{r.remove}}">×</button></div>
+<div class="taskdraft-grid">
+<div class="field td-wide"><label class="flab">{{t.thAction}}</label><input class="inp" value="{{r.task}}" sc-camel-on-input="{{r.onTask}}" placeholder="{{t.taskPh}}"></div>
+<div class="field"><label class="flab">{{t.owner}}</label><input class="inp" value="{{r.owner}}" sc-camel-on-input="{{r.onOwner}}"></div>
+<div class="field"><label class="flab">{{t.fStatus}}</label><sc-raw-select class="sel inp" sc-camel-on-change="{{r.onStatus}}"><sc-for list="{{r.statusOpts}}" as="o" hint-placeholder-count="3"><option value="{{o.v}}" selected="{{o.sel}}">{{o.t}}</option></sc-for></sc-raw-select></div>
+<div class="field"><label class="flab">{{t.thPriority}}</label><sc-raw-select class="sel inp" sc-camel-on-change="{{r.onPr}}"><sc-for list="{{r.prOpts}}" as="o" hint-placeholder-count="3"><option value="{{o.v}}" selected="{{o.sel}}">{{o.t}}</option></sc-for></sc-raw-select></div>
+<div class="field"><label class="flab">{{t.due}}</label><input class="inp" value="{{r.due}}" sc-camel-on-input="{{r.onDue}}" placeholder="e.g. 12 Jul"></div>
+<div class="field"><label class="flab">{{t.thDependency}}</label><input class="inp" value="{{r.dep}}" sc-camel-on-input="{{r.onDep}}"></div>
+<div class="field td-wide"><label class="flab">{{t.thNext}}</label><input class="inp" value="{{r.nx}}" sc-camel-on-input="{{r.onNx}}"></div>
+</div>
+</div>
+</sc-for>
+</div>
+</sc-if>
+</div>
+<div class="fx jb ac mt24"><span class="mut" style="font-size:12px">{{t.submitNote}}</span><button class="btn" type="submit">{{t.submitBtn}}</button></div>
+</form>
+</main>
+</sc-if>
+
+<sc-if value="{{isReports}}" hint-placeholder-val="{{false}}">
+<main class="pg wrap" data-screen-label="Reports">
+<div class="phead"><div><h1 class="ptitle">{{t.repTitle}}</h1><p class="psub">{{t.repSub}}</p></div>
+<div class="fx gap8"><button class="btn" sc-camel-on-click="{{doPrint}}">{{t.exportPdf}}</button><button class="btn ghost" sc-camel-on-click="{{doPrint}}">{{t.download}}</button><button class="btn ghost" sc-camel-on-click="{{doPrint}}">{{t.printView}}</button></div></div>
+<div class="card"><div class="fx jb ac wrap gap16"><div><div class="eyebrow">{{t.weekSum}}</div><div class="wname mt8" style="font-size:17px">{{t.weekLabel}}</div></div><span class="pill pg-g"><span class="dot"></span>{{t.issued}}</span></div>
+<div class="fgrid mt16">
+<div class="wrow"><div class="wlab">{{t.progWeek}}</div><div class="wtxt">{{t.progWeekTxt}}</div></div>
+<div class="wrow"><div class="wlab">{{t.escal}}</div><div class="wtxt">{{t.escalTxt}}</div></div>
+</div></div>
+<div class="card mt16"><div class="selrow">
+<div class="field"><label class="flab">{{t.fWs}}</label><sc-raw-select class="sel" sc-camel-on-change="{{setRepW}}"><sc-for list="{{repWOptions}}" as="o" hint-placeholder-count="4"><option value="{{o.v}}">{{o.t}}</option></sc-for></sc-raw-select></div>
+<div class="field"><label class="flab">{{t.fStatus}}</label><sc-raw-select class="sel" sc-camel-on-change="{{setRepS}}"><sc-for list="{{repSOptions}}" as="o" hint-placeholder-count="4"><option value="{{o.v}}">{{o.t}}</option></sc-for></sc-raw-select></div>
+<div class="field"><label class="flab">{{t.fOwner}}</label><sc-raw-select class="sel" sc-camel-on-change="{{setRepO}}"><sc-for list="{{repOOptions}}" as="o" hint-placeholder-count="4"><option value="{{o.v}}">{{o.t}}</option></sc-for></sc-raw-select></div>
+<div class="field"><label class="flab">{{t.fRisk}}</label><sc-raw-select class="sel" sc-camel-on-change="{{setRepR}}"><sc-for list="{{repROptions}}" as="o" hint-placeholder-count="2"><option value="{{o.v}}">{{o.t}}</option></sc-for></sc-raw-select></div>
+<span class="mut" style="font-size:12px;padding-bottom:10px;margin-inline-start:auto">{{repShown}}</span></div>
+<div class="table"><div class="thead"><span>{{t.thWs}}</span><span>{{t.owner}}</span><span>{{t.fStatus}}</span><span>{{t.thProg}}</span><span>{{t.thRisk}}</span><span>{{t.due}}</span></div>
+<sc-for list="{{repRows}}" as="r" hint-placeholder-count="8"><div class="trline"><span class="fw6">{{r.n}}</span><span>{{r.o}}</span><span class="pill {{r.pill}}"><span class="dot"></span>{{r.sl}}</span><span style="font-weight:600">{{r.p}}%</span><span>{{r.risk}}</span><span class="due">{{r.d}}</span></div></sc-for></div></div>
+</main>
+</sc-if>
+
+<sc-if value="{{isBrief}}" hint-placeholder-val="{{false}}">
+<main class="pg wrap" data-screen-label="Executive Summary Briefing">
+<div class="brief">
+<div class="brhead"><div class="eyebrow">{{t.brEyebrow}}</div><h1 class="ptitle" style="font-size:25px;margin-top:8px">{{t.brTitle}}</h1><div class="fx jb mt8 wrap gap8"><span class="mut" style="font-size:12px">{{t.brMeta}}</span><span class="mut" style="font-size:11px;font-weight:600;letter-spacing:.04em">{{t.brAsOf}}</span></div></div>
+<div class="fx gap16 wrap"><div class="card bstat"><div class="eyebrow">{{t.readinessS}}</div><div class="knum" style="margin-top:4px">56%</div></div><div class="card bstat"><div class="eyebrow">{{t.green}}</div><div class="knum" style="color:var(--g);margin-top:4px">7</div></div><div class="card bstat"><div class="eyebrow">{{t.amber}}</div><div class="knum" style="color:var(--a);margin-top:4px">9</div></div><div class="card bstat"><div class="eyebrow">{{t.red}}</div><div class="knum" style="color:var(--r);margin-top:4px">2</div></div></div>
+<div class="brsec"><h2 class="brh">{{t.brOnH}}</h2><sc-for list="{{brOn}}" as="b" hint-placeholder-count="3"><div class="brli"><span class="brdot" style="background:var(--g)"></span><span><strong>{{b.s}}</strong> {{b.r}}</span></div></sc-for></div>
+<div class="brsec"><h2 class="brh">{{t.brAttnH}}</h2><sc-for list="{{brAttn}}" as="b" hint-placeholder-count="3"><div class="brli"><span class="brdot" style="background:var(--a)"></span><span><strong>{{b.s}}</strong> {{b.r}}</span></div></sc-for></div>
+<div class="brsec"><h2 class="brh">{{t.brRedH}}</h2><sc-for list="{{brRed}}" as="b" hint-placeholder-count="2"><div class="brli"><span class="brdot" style="background:var(--r)"></span><span><strong>{{b.s}}</strong> {{b.r}}</span></div></sc-for></div>
+<div class="brsec"><h2 class="brh">{{t.brDecH}}</h2><sc-for list="{{brDec}}" as="b" hint-placeholder-count="4"><div class="brli"><span class="brdot" style="background:var(--acc)"></span><span>{{b.t}} — <strong>{{b.d}}</strong></span></div></sc-for></div>
+<div class="brsec"><h2 class="brh">{{t.brDlH}}</h2><div class="brli"><span class="brdot" style="background:var(--navy)"></span><span>{{t.brDlTxt}}</span></div></div>
+<div class="note"><div class="eyebrow">{{t.pmNoteH}}</div><p style="margin:8px 0 0">{{t.pmNoteTxt}}</p><div class="sig">{{t.sig}}</div></div>
+</div>
+</main>
+</sc-if>
+
+<sc-if value="{{isHotel}}" hint-placeholder-val="{{false}}">
+<main class="pg wrap" data-screen-label="Hotel Accommodation">
+<div class="phead"><div><h1 class="ptitle">{{t.htTitle}}</h1><p class="psub">{{t.htSub}}</p></div><sc-if value="{{htHas}}" hint-placeholder-val="{{false}}"><button class="btn ghost" sc-camel-on-click="{{htExport}}"><svg sc-camel-view-box="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-inline-end:6px;vertical-align:-2px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="M7 10l5 5 5-5M12 15V3"></path></svg>{{t.htExportL}}</button></sc-if></div>
+<sc-if value="{{htHas}}" hint-placeholder-val="{{false}}">
+<div class="card" style="overflow-x:auto">
+<div class="httable">
+<div class="htrow hthead"><span>{{t.wfNameL}}</span><span>{{t.htTeamL}}</span><span>{{t.htGenderL}}</span><span>{{t.htHotelL}}</span><span>{{t.htConfL}}</span><span>{{t.htStayL}}</span><span>{{t.htRoommateL}}</span><span>{{t.htNotifyL}}</span></div>
+<sc-for list="{{htRows}}" as="h" hint-placeholder-count="4">
+<div class="htrow">
+<span><span class="fw6">{{h.n}}</span><span class="mut" style="display:block;font-size:11px;margin-top:2px;white-space:pre-line;line-height:1.5">{{h.contactLine}}</span></span>
+<span class="mut">{{h.team}}</span>
+<span><sc-raw-select class="sel inp htinp" value="{{h.gender}}" sc-camel-on-change="{{h.setGender}}"><option value="">—</option><option value="M">{{t.htMaleL}}</option><option value="F">{{t.htFemaleL}}</option></sc-raw-select></span>
+<span><input class="inp htinp" value="{{h.hotel}}" sc-camel-on-change="{{h.setHotel}}" placeholder="{{t.htHotelPh}}"></span>
+<span><input class="inp htinp" value="{{h.conf}}" sc-camel-on-change="{{h.setConf}}" placeholder="{{t.htConfPh}}"></span>
+<span style="display:flex;flex-direction:column;gap:4px;min-width:0"><input class="inp htinp" type="datetime-local" value="{{h.cin}}" sc-camel-on-change="{{h.setCin}}" title="{{t.htCinL}}"><input class="inp htinp" type="datetime-local" value="{{h.cout}}" sc-camel-on-change="{{h.setCout}}" title="{{t.htCoutL}}"></span>
+<span style="display:flex;align-items:center;gap:6px;min-width:0"><input class="inp htinp" value="{{h.mate}}" sc-camel-on-change="{{h.setMate}}" placeholder="{{t.htRoommatePh}}" title="{{h.mateTitle}}"><sc-if value="{{h.showMateActions}}" hint-placeholder-val="{{false}}"><button class="htokbtn" type="button" title="{{t.htApproveMateL}}" sc-camel-on-click="{{h.approveMate}}"><svg sc-camel-view-box="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"></path></svg></button><button class="htrejbtn" type="button" title="{{t.htRejectMateL}}" sc-camel-on-click="{{h.rejectMate}}"><svg sc-camel-view-box="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></sc-if><sc-if value="{{h.mateApproved}}" hint-placeholder-val="{{false}}"><span class="htokdone" title="{{t.htApprovedL}}"><svg sc-camel-view-box="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"></path></svg></span></sc-if></span>
+<span style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><sc-if value="{{h.canNotify}}" hint-placeholder-val="{{false}}"><button class="htmsgbtn htwa" type="button" title="{{t.htWaL}}" sc-camel-on-click="{{h.previewWa}}"><svg sc-camel-view-box="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm5.3 14.1c-.2.6-1.2 1.2-1.7 1.2-.4.1-1 .1-1.6-.1a13 13 0 0 1-1.5-.5c-2.6-1.1-4.3-3.8-4.4-4-.1-.2-1-1.4-1-2.6s.6-1.8.9-2c.2-.3.5-.3.7-.3h.5c.2 0 .4-.1.6.4l.8 2c.1.1.1.3 0 .5l-.3.5-.4.5c-.1.1-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.4 2.4 1.5.3.1.5.1.6-.1l.8-1c.2-.3.4-.2.6-.1l1.9.9c.3.1.5.2.5.3.1.1.1.5 0 .2z"></path></svg></button><button class="htmsgbtn htem" type="button" title="{{t.htEmL}}" sc-camel-on-click="{{h.previewEm}}"><svg sc-camel-view-box="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M3 7l9 6 9-6"></path></svg></button><sc-if value="{{h.sentWa}}" hint-placeholder-val="{{false}}"><span class="htsent htsent-wa" title="{{h.sentWaAt}}"><svg sc-camel-view-box="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"></path></svg>{{t.htWaTag}}</span></sc-if><sc-if value="{{h.sentEm}}" hint-placeholder-val="{{false}}"><span class="htsent htsent-em" title="{{h.sentEmAt}}"><svg sc-camel-view-box="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"></path></svg>{{t.htEmTag}}</span></sc-if></sc-if><sc-if value="{{h.notNotify}}" hint-placeholder-val="{{true}}"><span class="mut" style="font-size:11px">{{t.htNotifyHint}}</span></sc-if></span>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-if>
+<sc-if value="{{htEmpty}}" hint-placeholder-val="{{true}}"><div class="card" style="text-align:center;padding:48px 24px"><div style="font-size:15px;font-weight:700">{{t.htEmptyT}}</div><p class="setp" style="margin:8px auto 0;max-width:420px">{{t.htEmptyTxt}}</p></div></sc-if>
+</main>
+</sc-if>
+
+<sc-if value="{{isFeedback}}" hint-placeholder-val="{{false}}">
+<main class="pg wrap" data-screen-label="Feedback">
+<div class="phead"><div><h1 class="ptitle">{{t.fbTitle}}</h1><p class="psub">{{t.fbSub}}</p></div><sc-if value="{{fbHas}}" hint-placeholder-val="{{false}}"><button class="btn ghost" sc-camel-on-click="{{fbExport}}"><svg sc-camel-view-box="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-inline-end:6px;vertical-align:-2px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="M7 10l5 5 5-5M12 15V3"></path></svg>{{t.fbExportL}}</button></sc-if></div>
+<sc-if value="{{fbLocked}}" hint-placeholder-val="{{false}}">
+<div class="card" style="text-align:center;padding:56px 24px">
+<svg sc-camel-view-box="0 0 24 24" width="38" height="38" fill="none" stroke="var(--mut)" stroke-width="1.6" style="margin-bottom:14px"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>
+<div style="font-size:16px;font-weight:700">{{t.fbLockedT}}</div>
+<p class="setp" style="margin:8px auto 0;max-width:440px">{{t.fbLockedTxt}}</p>
+<sc-if value="{{admin}}" hint-placeholder-val="{{false}}"><button class="btn mt16" sc-camel-on-click="{{fbOpenNow}}">{{t.fbOpenNowL}}</button></sc-if>
+</div>
+</sc-if>
+<sc-if value="{{fbUnlocked}}" hint-placeholder-val="{{false}}">
+<div class="two" style="margin-top:0;align-items:start">
+<div class="card">
+<div class="eyebrow">{{t.fbFormT}}</div>
+<form sc-camel-on-submit="{{fbSubmit}}">
+<div class="fgrid mt16">
+<div class="field"><label class="flab">{{t.fbNameL}}</label><input class="inp" name="author" placeholder="{{t.fbNamePh}}" required="" sc-camel-auto-complete="off"></div>
+<div class="field"><label class="flab">{{t.fbOwnTeamL}}</label><sc-raw-select class="sel inp" name="ownTeam"><sc-for list="{{fbTeamOpts}}" as="o" hint-placeholder-count="5"><option>{{o.t}}</option></sc-for></sc-raw-select></div>
+</div>
+<div class="field mt16"><label class="flab">{{t.fbTeamL}}</label><sc-raw-select class="sel inp" name="team"><sc-for list="{{fbTeamOpts}}" as="o" hint-placeholder-count="5"><option>{{o.t}}</option></sc-for></sc-raw-select></div>
+<div class="field mt16"><label class="flab">{{t.fbTextL}}</label><textarea class="inp ta" name="text" placeholder="{{t.fbTextPh}}" style="min-height:110px"></textarea></div>
+<div class="fx mt16" style="justify-content:flex-end"><button class="btn" type="submit">{{t.fbSubmitL}}</button></div>
+</form>
+</div>
+<div class="card">
+<div class="eyebrow">{{t.fbListT}}</div>
+<sc-if value="{{fbHas}}" hint-placeholder-val="{{false}}"><div class="mt14" style="display:flex;flex-direction:column;gap:12px"><sc-for list="{{fbItems}}" as="f" hint-placeholder-count="2">
+<div style="border:1px solid var(--line);border-radius:12px;padding:12px 14px">
+<div class="fx jb ac gap8" style="flex-wrap:wrap"><span class="pill pg-neutral"><span class="dot"></span>{{f.team}}</span><span class="mut fs12">{{f.dateL}}</span></div>
+<div style="font-size:13px;line-height:1.6;margin-top:9px">{{f.text}}</div>
+<div class="mut fs12" style="margin-top:7px">{{f.by}}</div>
+</div></sc-for></div></sc-if>
+<sc-if value="{{fbEmpty}}" hint-placeholder-val="{{true}}"><div class="empty">{{t.fbEmpty}}</div></sc-if>
+</div>
+</div>
+</sc-if>
+</main>
+</sc-if>
+
+<sc-if value="{{isMgmt}}" hint-placeholder-val="{{false}}">
+<main class="pg wrap">
+<div class="phead"><div><h1 class="ptitle">{{mgmtT.title}}</h1><p class="psub">{{mgmtT.sub}}</p></div></div>
+<div class="card">
+<div class="fx jb ac gap8"><div class="eyebrow" style="margin:0">{{mgmtT.users}}</div><span class="mgmt-count">{{mgmtCount}}</span></div>
+<div class="mgmt-scroll mt16">
+<div class="mgmt-grid">
+<div class="mgmt-h">{{mgmtT.user}}</div><div class="mgmt-h">{{mgmtT.last}}</div><div class="mgmt-h">{{mgmtT.role}}</div><div class="mgmt-h">{{mgmtT.change}}</div><div class="mgmt-h">{{mgmtT.streams}}</div><div class="mgmt-h">{{mgmtT.pass}}</div>
+<sc-for list="{{mgmtRows}}" as="u" hint-placeholder-count="3">
+<div class="mgmt-row">
+<div class="mgmt-c"><div class="fx ac gap10"><div class="mgmt-av">{{u.init}}</div><div><div class="mgmt-n">{{u.name}}<sc-if value="{{u.isMe}}" hint-placeholder-val="{{false}}"><span class="mgmt-you">{{mgmtT.you}}</span></sc-if></div><div class="mgmt-e">{{u.email}}</div></div></div></div>
+<div class="mgmt-c mgmt-last">{{u.last}}</div>
+<div class="mgmt-c"><span class="mgmt-role {{u.roleCls}}">{{u.roleL}}</span></div>
+<div class="mgmt-c"><sc-if value="{{u.isMe}}" hint-placeholder-val="{{false}}"><div class="mgmt-e">{{mgmtT.noSelf}}</div></sc-if><sc-if value="{{u.notMe}}" hint-placeholder-val="{{true}}"><sc-raw-select class="sel inp mgmt-sel" sc-camel-on-change="{{u.setRole}}"><sc-for list="{{u.roleOpts}}" as="ro" hint-placeholder-count="3"><option value="{{ro.v}}" selected="{{ro.sel}}">{{ro.l}}</option></sc-for></sc-raw-select></sc-if></div>
+<div class="mgmt-c"><sc-if value="{{u.canStream}}" hint-placeholder-val="{{false}}"><sc-raw-select class="sel inp mgmt-sel" sc-camel-on-change="{{u.setStream}}"><sc-for list="{{u.streamOpts}}" as="so" hint-placeholder-count="3"><option value="{{so.v}}" selected="{{so.sel}}">{{so.l}}</option></sc-for></sc-raw-select></sc-if><sc-if value="{{u.noStream}}" hint-placeholder-val="{{true}}"><span class="mgmt-e">—</span></sc-if></div>
+<div class="mgmt-c"><div class="fx ac gap8"><input class="inp mgmt-pass" placeholder="{{mgmtT.passPh}}" value="{{u.pass}}" sc-camel-on-input="{{u.typePass}}" sc-camel-auto-complete="off"><button class="btn btn-sm" type="button" sc-camel-on-click="{{u.genPass}}">{{mgmtT.gen}}</button></div></div>
+</div>
+</sc-for>
+</div>
+</div>
+</div>
+</main>
+</sc-if>
+<sc-if value="{{isSettings}}" hint-placeholder-val="{{false}}">
+<main class="pg wrap" data-screen-label="Settings">
+<div class="phead"><div><h1 class="ptitle">{{t.setTitle}}</h1><p class="psub">{{t.setSub}}</p></div></div>
+<div class="setgrid">
+<div class="card"><div class="eyebrow">{{t.setLang}}</div><div class="lang lang-lg mt14"><button class="lbtn {{enCls}}" sc-camel-on-click="{{setEn}}">English</button><button class="lbtn {{arCls}}" sc-camel-on-click="{{setAr}}">العربية</button></div></div>
+<div class="card"><div class="eyebrow">{{t.setAccess}}</div><p class="setp">{{t.setAccessTxt}}</p><button class="btn {{adminBtnCls}}" sc-camel-on-click="{{adminClick}}"><span class="{{adminIconCls}}"></span>{{adminBtnLabel}}</button></div>
+<sc-if value="{{admin}}" hint-placeholder-val="{{false}}"><div class="card"><div class="eyebrow">{{t.empDirT}}</div><p class="setp">{{t.empDirTxt}}</p><div class="fx ac gap10" style="flex-wrap:wrap"><button class="btn" sc-camel-on-click="{{pickEmpDir}}">{{t.empDirUploadL}}</button><sc-if value="{{empDirLoaded}}" hint-placeholder-val="{{false}}"><span class="pill pg-g"><span class="dot"></span>{{empDirCountL}}</span><button class="btn ghost" sc-camel-on-click="{{clearEmpDir}}">{{t.empDirClearL}}</button></sc-if></div></div></sc-if>
+<div class="card"><div class="eyebrow">{{t.setDensity}}</div><p class="setp">{{t.setThemeTxt}}</p><div class="lang lang-lg mt14"><button class="lbtn {{densComfortCls}}" sc-camel-on-click="{{toggleDensity}}">{{t.densComfort}}</button><button class="lbtn {{densCompactCls}}" sc-camel-on-click="{{toggleDensity}}">{{t.densCompact}}</button></div></div>
+<div class="card"><div class="eyebrow">{{t.setData}}</div><p class="setp">{{t.setDataTxt}}</p><button class="btn ghost" sc-camel-on-click="{{resetData}}">{{t.setReset}}</button></div>
+</div>
+</main>
+</sc-if>
+
+<sc-if value="{{isApprovals}}" hint-placeholder-val="{{false}}">
+<main class="pg wrap" data-screen-label="Approvals">
+<div class="phead"><div><h1 class="ptitle">{{t.apprTitle}}</h1><p class="psub">{{t.apprSub}}</p></div>
+<sc-if value="{{admin}}" hint-placeholder-val="{{false}}"><button class="btn" sc-camel-on-click="{{openCreateAppr}}"><span class="btnplus">+</span>{{t.createApprL}}</button></sc-if></div>
+<div class="apprstats">
+<div class="apprstat"><div class="apprstat-n">{{apprTotalPending}}</div><div class="apprstat-l">{{t.apprPending}}</div></div>
+<div class="apprstat"><div class="apprstat-n apprstat-g">{{apprApprovedWeek}}</div><div class="apprstat-l">{{t.apprApprovedWk}}</div></div>
+<div class="apprstat"><div class="apprstat-n apprstat-r">{{apprRejected}}</div><div class="apprstat-l">{{t.apprRejectedN}}</div></div>
+<div class="apprstat"><div class="apprstat-n apprstat-a">{{apprHigh}}</div><div class="apprstat-l">{{t.apprHighN}}</div></div>
+</div>
+<sc-if value="{{hasAppr}}" hint-placeholder-val="{{true}}">
+<div class="apprgrid">
+<sc-for list="{{apprCards}}" as="a" hint-placeholder-count="4">
+<div class="{{a.cardCls}}" sc-camel-on-click="{{a.open}}">
+<div class="fx jb ac gap8"><span class="pill {{a.statusPill}}"><span class="dot"></span>{{a.statusL}}</span><span class="prtag {{a.prCls}}">{{a.prL}}</span></div>
+<div class="appr-title">{{a.title}}</div>
+<div class="appr-desc">{{a.desc}}</div>
+<div class="appr-metarow"><span class="appr-mk">{{t.apprTeamL}}</span><span class="appr-mv">{{a.team}}</span></div>
+<div class="appr-metarow"><span class="appr-mk">{{t.apprByL}}</span><span class="appr-mv">{{a.requestedBy}}</span></div>
+<div class="appr-foot"><span class="mut fs12">{{t.due}} {{a.due}}</span><span class="appr-src">{{a.sourceL}}</span></div>
+<sc-if value="{{a.hasAttach}}" hint-placeholder-val="{{false}}"><div class="apprm-attach" style="margin-top:10px" sc-camel-on-click="{{stop}}"><span class="apprm-attach-ic">📎</span><a href="{{a.attachUrl}}" download="{{a.attachName}}" style="color:var(--acc);font-weight:600;text-decoration:none">{{a.attachName}}</a></div></sc-if>
+<sc-if value="{{a.hasInfoReq}}" hint-placeholder-val="{{false}}"><div class="apprm-note" style="background:rgba(196,138,26,.08);color:#7a5a14;border:1px solid rgba(196,138,26,.25);margin-top:10px"><strong>{{apprInfoReqL}}:</strong> {{a.infoNote}}</div></sc-if>
+<sc-if value="{{a.hasCardReason}}" hint-placeholder-val="{{false}}"><div class="apprm-note apprm-note-r" style="margin-top:10px"><strong>{{t.apprRejReasonL}}:</strong> {{a.cardReason}}</div></sc-if>
+<sc-if value="{{a.canAct}}" hint-placeholder-val="{{false}}">
+<div sc-camel-on-click="{{stop}}" style="margin-top:12px;border-top:1px solid var(--line);padding-top:12px">
+<sc-if value="{{a.noMode}}" hint-placeholder-val="{{true}}"><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btnsm" sc-camel-on-click="{{a.approve}}">{{t.apprApprove}}</button><button class="btn btnred btnsm" sc-camel-on-click="{{a.startReject}}">{{t.apprReject}}</button><button class="btn ghost btnsm" sc-camel-on-click="{{a.startInfo}}">{{apprInfoBtnL}}</button></div></sc-if>
+<sc-if value="{{a.isRejectMode}}" hint-placeholder-val="{{false}}"><div style="display:flex;flex-direction:column;gap:8px"><input class="inp" placeholder="{{t.apprRejPh}}" value="{{apprCardInput}}" sc-camel-on-input="{{setCardInput}}"><div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn ghost btnsm" sc-camel-on-click="{{cancelCardAct}}">{{t.cancel}}</button><button class="btn btnred btnsm" sc-camel-on-click="{{a.confirmReject}}">{{t.apprConfirmReject}}</button></div></div></sc-if>
+<sc-if value="{{a.isInfoMode}}" hint-placeholder-val="{{false}}"><div style="display:flex;flex-direction:column;gap:8px"><input class="inp" placeholder="{{apprInfoPh}}" value="{{apprCardInput}}" sc-camel-on-input="{{setCardInput}}"><div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn ghost btnsm" sc-camel-on-click="{{cancelCardAct}}">{{t.cancel}}</button><button class="btn btnsm" sc-camel-on-click="{{a.confirmInfo}}">{{apprInfoSendL}}</button></div></div></sc-if>
+</div>
+</sc-if>
+</div>
+</sc-for>
+</div>
+</sc-if>
+<sc-if value="{{noAppr}}" hint-placeholder-val="{{false}}">
+<div class="emptybox">
+<div class="empty-ic"><svg sc-camel-view-box="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12.5l2.2 2.2L15.5 10"></path><path d="M12 3l7 3v5.5c0 4.3-2.9 7.4-7 8.5-4.1-1.1-7-4.2-7-8.5V6z"></path></svg></div>
+<div class="empty-t">{{t.apprEmpty}}</div>
+<sc-if value="{{admin}}" hint-placeholder-val="{{false}}"><button class="btn mt14" sc-camel-on-click="{{openCreateAppr}}"><span class="btnplus">+</span>{{t.createApprL}}</button></sc-if>
+</div>
+</sc-if>
+</main>
+</sc-if>
+
+<sc-if value="{{isDesign}}" hint-placeholder-val="{{false}}">
+<main class="pg wrap" data-screen-label="Event Design">
+<div class="phead"><div><h1 class="ptitle">{{t.designTitle}}</h1><p class="psub">{{t.designSub}}</p></div></div>
+<div class="dgrid">
+<sc-for list="{{designSections}}" as="s" hint-placeholder-count="6">
+<div class="card dcard">
+<div class="dcard-head"><span class="dcard-ic">{{s.icon}}</span><div class="dcard-hx"><div class="dcard-title">{{s.title}}</div><div class="mut fs12">{{s.owner}} · {{t.updated}} {{s.updated}}</div></div></div>
+<sc-if value="{{s.hasFiles}}" hint-placeholder-val="{{true}}">
+<div class="dpreview"><sc-for list="{{s.previewFiles}}" as="f" hint-placeholder-count="3"><div class="dthumb"><div class="dthumb-img"><span class="dthumb-ext">{{f.ext}}</span></div><div class="dthumb-n">{{f.name}}</div></div></sc-for></div>
+</sc-if>
+<sc-if value="{{s.noFiles}}" hint-placeholder-val="{{false}}">
+<div class="dcard-empty">{{t.designEmpty}}</div>
+</sc-if>
+<div class="dcard-foot"><span class="dcard-count">{{s.countL}}</span><div class="fx gap8"><sc-if value="{{canUploadDesign}}" hint-placeholder-val="{{false}}"><button class="btn ghost btn-sm" sc-camel-on-click="{{s.upload}}">{{t.uploadL}}</button></sc-if><button class="btn btn-sm" sc-camel-on-click="{{s.open}}">{{t.viewDetailsL}}</button></div></div>
+</div>
+</sc-for>
+</div>
+</main>
+</sc-if>
+<sc-if value="{{isOverview}}" hint-placeholder-val="{{true}}">
+<main class="pg wrap" data-screen-label="Executive Overview" style="position: relative">
+<div class="phead"><div><h1 class="ptitle" style="font-size: 34px">{{eventName}}</h1></div></div>
+<sc-if value="{{isWef}}" hint-placeholder-val="{{true}}">
+<div class="card hero hero2" style="background: linear-gradient(135deg, #3165AB, #00142E)">
+<div><div class="eyebrow" style="font-size: 12px">{{t.readiness}}</div><div class="heronum">{{taskReadiness}}%</div><div class="herobar"><div class="herofill" style="width:{{taskReadiness}}%"></div></div><p class="heroP" style="font-size: 12px; margin-top: 10px; opacity: .85">{{taskReadinessNote}}</p></div>
+<div class="herocd"><div class="eyebrow" style="font-size: 12px">{{t.cdTitle}}</div><div class="cdbox cdbox-hero"><span class="cdn">{{cdDays}}</span><span class="cdl">{{t.days}}</span><span class="cdsep">·</span><span class="cdn">{{cdHrs}}</span><span class="cdl">{{t.hrs}}</span><span class="cdsep">·</span><span class="cdn">{{cdMin}}</span><span class="cdl">{{t.min}}</span><span class="cdsep">·</span><span class="cdn">{{cdSec}}</span><span class="cdl">{{t.sec}}</span></div></div>
+</div>
+<sc-if value="{{isHE}}" hint-placeholder-val="{{false}}">
+<div class="mt16">
+<div class="eyebrow" style="font-size: 12px">{{t.opsUpdTitle}}</div>
+<div style="columns: 3; column-gap: 14px; margin-top: 12px">
+<sc-for list="{{opsUpdates}}" as="ou" hint-placeholder-count="6">
+<div class="card" style="break-inside: avoid; margin-bottom: 14px; padding: 16px 18px">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--line)"><div style="font-size: 14px; font-weight: 700">{{ou.n}}</div><span style="color: #1B66C9; display: flex; flex: none">{{ou.ic}}</span></div>
+<div style="display: flex; flex-direction: column; gap: 9px; margin-top: 12px">
+<sc-for list="{{ou.items}}" as="oi" hint-placeholder-count="2">
+<div style="display: flex; gap: 9px; align-items: flex-start"><span style="flex: none; width: 5px; height: 14px; border-radius: 2px; background: #1B66C9; margin-top: 3px"></span><span style="font-size: 12.5px; line-height: 1.55; color: var(--ink)">{{oi.txt}}</span></div>
+</sc-for>
+</div>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-if>
+<div class="snap mt16">
+<div class="snaphead"><div class="eyebrow" style="font-size: 12px">{{t.progStatus}}</div><span class="snapct">{{t.wsCount}}</span></div>
+<div class="statusbar"><div class="seg seg-g" style="flex:7"></div><div class="seg seg-a" style="flex:9"></div><div class="seg seg-r" style="flex:2"></div></div>
+<div class="statuslegend"><span class="lgi"><span class="lgd" style="background:#1B66C9"></span>{{t.statuses.g}}<b>7</b></span><span class="lgi"><span class="lgd" style="background:#5B93DB"></span>{{t.statuses.a}}<b>9</b></span><span class="lgi"><span class="lgd" style="background:var(--r)"></span>{{t.statuses.r}}<b>2</b></span></div>
+</div>
+<div class="kgrid3 mt14"><sc-for list="{{kpis3}}" as="k" hint-placeholder-count="3"><div class="mcard"><div class="mhead"><div class="mlab" style="font-size: 14px">{{k.lab}}</div><div class="micon" style="background: {{k.icbg}}; color: {{k.c}}; width: 44px; height: 39px">{{k.ic}}</div></div><div class="mnum" style="color:{{k.c}}">{{k.num}}</div><div class="msub" style="font-size: 13px">{{k.sub}}</div></div></sc-for></div>
+<sc-if value="{{hasExecNoms}}" hint-placeholder-val="{{false}}">
+<div class="card mt14">
+<div class="fx jb ac gap8"><div class="eyebrow">{{t.nomPendingT}}</div><span class="pill pg-a"><span class="dot"></span>{{execNomCountL}}</span></div>
+<div class="mt14" style="display:flex;flex-direction:column;gap:10px">
+<sc-for list="{{execNoms}}" as="nm" hint-placeholder-count="2">
+<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;border:1px solid var(--line);border-radius:12px;padding:11px 14px">
+<div class="leadav" style="flex:none">{{nm.init}}</div>
+<div style="flex:1;min-width:160px"><div style="font-size:13.5px;font-weight:600">{{nm.n}}</div><div style="font-size:11.5px;color:var(--mut);margin-top:2px">{{nm.role}}</div></div>
+<span class="pill pg-neutral"><span class="dot"></span>{{nm.teamN}}</span>
+<sc-if value="{{nm.isAdmin}}" hint-placeholder-val="{{false}}"><span style="display:flex;gap:6px"><button class="btn btn-sm" type="button" sc-camel-on-click="{{nm.approve}}">{{t.nomApproveL}}</button><button class="btn ghost btn-sm" type="button" sc-camel-on-click="{{nm.reject}}">{{t.nomRejectL}}</button></span></sc-if>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-if>
+</sc-if>
+<sc-if value="{{genOverview}}" hint-placeholder-val="{{false}}">
+<div class="card hero hero2">
+<div><div class="eyebrow">{{t.ovReadiness}}</div><div class="heronum">{{ovw.readiness}}%</div><div class="herobar"><div class="herofill" style="width:{{ovw.readiness}}%"></div></div><p class="heroP" style="font-size:12px;margin-top:12px">{{t.ovHeroNote}}</p></div>
+<div class="herocd"><div class="eyebrow">{{t.progStatus}}</div>
+<div class="statusbar" style="margin-top:12px"><div class="seg seg-g" style="flex:{{ovw.segG}}"></div><div class="seg seg-a" style="flex:{{ovw.segA}}"></div><div class="seg seg-r" style="flex:{{ovw.segR}}"></div></div>
+<div class="statuslegend"><span class="lgi"><span class="lgd" style="background:#1B66C9"></span>{{t.statuses.g}}<b>{{ovw.g}}</b></span><span class="lgi"><span class="lgd" style="background:#5B93DB"></span>{{t.statuses.a}}<b>{{ovw.a}}</b></span><span class="lgi"><span class="lgd" style="background:var(--r)"></span>{{t.statuses.r}}<b>{{ovw.r}}</b></span></div>
+<p class="heroP" style="font-size:11.5px;margin-top:12px">{{t.ovAgmNote}}</p></div>
+</div>
+<div class="kgrid3 mt16"><sc-for list="{{ovw.kpis}}" as="k" hint-placeholder-count="6"><div class="mcard"><div class="mhead"><div class="mlab">{{k.lab}}</div></div><div class="mnum" style="color:{{k.col}}">{{k.val}}</div><div class="msub">{{k.sub}}</div></div></sc-for></div>
+<div class="card mt16"><div class="fx jb ac gap8"><div><div class="eyebrow">{{t.ovAttnTitle}}</div><p class="psub" style="margin:4px 0 0">{{t.ovAttnSubT}}</p></div></div>
+<div class="ovattn mt14"><sc-for list="{{ovw.attention}}" as="it" hint-placeholder-count="4"><div class="ovattn-row {{it.tcCls}}" sc-camel-on-click="{{it.open}}"><div class="ovattn-main"><div class="ovattn-n">{{it.n}}</div><div class="ovattn-item">{{it.item}}</div></div><div class="ovattn-meta"><span class="pill {{it.pill}}"><span class="dot"></span>{{it.sl}}</span><span class="mut fs12">{{t.owner}}: {{it.owner}}</span></div></div></sc-for></div>
+</div>
+</sc-if>
+<sc-if value="{{emptyTracker}}" hint-placeholder-val="{{false}}"><div class="blankstate"><div class="blankstate-ic">◔</div><div class="blankstate-t">{{t.emptyUpdates}}</div><div class="blankstate-s">{{t.blankOverviewSub}}</div><sc-if value="{{blankAdmin}}" hint-placeholder-val="{{false}}"><div style="margin-top:18px"><button class="btn" sc-camel-on-click="{{openAddTeam}}">{{t.addTeamL}}</button></div></sc-if></div></sc-if>
+</main>
+</sc-if>
+</div>
+
+</div>
+</sc-if>
+<sc-if value="{{needLogin}}" hint-placeholder-val="{{false}}">
+<div class="login-ovl"><div class="login-card" dir="{{loginDir}}">
+<img class="login-logo" src="assets/logo-moca-login.png" alt="Ministry of Cabinet Affairs">
+<h1 class="login-title">{{loginTitle}}</h1>
+<div class="login-ar">{{loginTitle2}}</div>
+<p class="login-sub">{{loginDesc}}</p>
+<form sc-camel-on-submit="{{doLogin}}">
+<input class="login-inp" name="email" type="email" placeholder="{{loginEmailPh}}" sc-camel-auto-complete="username">
+<input class="login-inp" name="password" type="password" placeholder="{{loginPassPh}}" sc-camel-auto-complete="current-password">
+<sc-if value="{{loginErr}}" hint-placeholder-val="{{false}}"><div class="login-err">{{loginErrMsg}}</div></sc-if>
+<button class="login-btn" type="submit">{{loginBtnL}}</button>
+</form>
+<div class="login-foot">{{loginFootL}}</div>
+</div></div>
+</sc-if>

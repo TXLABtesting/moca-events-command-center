@@ -83,14 +83,13 @@ class DashboardAppV7 extends React.Component {
     const db = this._db; const docs = db.docs || {}; const me = this.props.me || {};
     const role = me.role || 'inputter';
     const g = (k, d) => (docs[k] === undefined || docs[k] === null) ? d : docs[k];
-    const ls = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; } };
     const deptMembers = { ...this.seedDeptMembers(), ...g('wef_deptmembers', {}) };
     const empDir = g('wef_empdir', []);
     return {
       edits: g('wef_edits', {}), members: g('wef_members', null) || this.seedMembers(), photos: g('wef_photos', {}), order: g('wef_order', null),
       deptEdits: g('wef_deptedits', {}), deptMembers, customEvents: g('wef_custom_events', []), eventEdits: g('wef_event_edits', {}), eventDeleted: g('wef_event_deleted', []), eventTeams: g('wef_event_teams', {}),
       empDir: Array.isArray(empDir) ? empDir : [], wfNom: g('wef_wfnom', {}), fbOpen: g('wef_fbopen', {}), feedback: g('wef_feedback', {}), hotelAssign: g('wef_hotel', {}),
-      role, admin: role === 'admin', myStreams: ls('wef_mystream', {}), leadId: 'me',
+      role, admin: role === 'admin', myStreams: (() => { try { return JSON.parse(localStorage.getItem('wef_mystream') || '{}') || {}; } catch (e) { return {}; } })(), leadId: 'me',
       approvals: g('wef_approvals', {}), design: g('wef_design', {}), tasks: g('wef_tasks', {}), teamlog: g('wef_teamlog', {}), taskOv: g('wef_taskov', {}), taskDel: g('wef_taskdel', {}), baseHide: g('wef_basehide', {}), tlEdits: g('wef_tledits', {}),
       users: db.users || [], authed: true
     };
@@ -116,7 +115,9 @@ class DashboardAppV7 extends React.Component {
   }
 
   persist(key, val) {
-    try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {}
+    // Display preferences stay on the device; everything else goes to the server only.
+    if (key === 'wef_lang') { try { localStorage.setItem('wef_lang', JSON.stringify(val)); } catch (e) {} return; }
+    if (key === 'wef_mystream') { try { localStorage.setItem('wef_mystream', JSON.stringify(val)); } catch (e) {} return; }
     if (LOCAL_KEYS.has(key) || !this.props.sync) return;
     this.props.sync(key, val).then(() => { if (this.state.syncError) this.setState({ syncError: null }); })
       .catch(err => this.setState({ syncError: (err && err.message) || String(err) }));
@@ -647,7 +648,6 @@ class DashboardAppV7 extends React.Component {
   };
   goUpdateFn = (wsName) => () => { this.setState({ page: 'submit', submitWs: wsName, detailIdx: null }); window.scrollTo(0, 0); };
   resetData = () => { if (this.props.refresh) this.props.refresh(); };
-  _leadStreams() { const L = this.STREAM_LEADS.find(x => x.id === (this.state.leadId || 'ali')); return L ? L.streams : []; }
   setLead = (e) => { const v = e.target.value; this.persist('wef_lead', v); this.setState({ leadId: v }); };
   _usersApi(p) { const api = this.props.users; if (!api) return Promise.reject(new Error('users API unavailable')); return p(api).then(() => this.props.refresh && this.props.refresh()).catch(err => this.setState({ syncError: (err && err.message) || String(err) })); }
   mgmtSetRole = (id) => (e) => { const v = e.target.value; this._usersApi(api => api.update(id, { role: v })); };
@@ -1874,7 +1874,6 @@ class DashboardAppV7 extends React.Component {
         } };
       })(),
       needLogin: false, doLogin: () => {}, doSignOut: (this.props && this.props.onSignOut) || (() => {}), syncError: st.syncError || null,
-      loginErr: !!st.loginErr,
       loginErrMsg: ar ? 'البريد الإلكتروني أو كلمة المرور غير صحيحة' : 'Invalid email or password',
       loginDir: ar ? 'rtl' : 'ltr',
       loginTitle: ar ? 'مركز قيادة فعاليات وزارة شؤون مجلس الوزراء' : 'MOCA Events Command Center',

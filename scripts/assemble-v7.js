@@ -7,8 +7,16 @@ const fs = require('fs');
 const SP = __dirname;
 const OUT = process.argv[2];
 
-let logic = fs.readFileSync(SP + '/v7.design.logic.js', 'utf8');
-let render = fs.readFileSync(SP + '/v7.render.jsx', 'utf8');
+// Inputs: scripts/design.logic.js + scripts/design.template.html (the extracted design export).
+// The template is transpiled to JSX on the fly with transpile.js.
+const logicPath = fs.existsSync(SP + '/v7.design.logic.js') ? SP + '/v7.design.logic.js' : SP + '/design.logic.js';
+let logic = fs.readFileSync(logicPath, 'utf8');
+let renderPath = SP + '/v7.render.jsx';
+if (!fs.existsSync(renderPath)) {
+  renderPath = SP + '/.design.render.jsx';
+  require('child_process').execFileSync(process.execPath, [SP + '/transpile.js', SP + '/design.template.html', renderPath], { stdio: 'inherit' });
+}
+let render = fs.readFileSync(renderPath, 'utf8');
 let n = 0;
 function rep(hay, find, replace, label, { all = false } = {}) {
   const c = hay.split(find).length - 1;
@@ -69,14 +77,13 @@ logic = rep(logic, '  applyHash() {', `  componentDidUpdate(prev) { if (prev.dat
     const db = this._db; const docs = db.docs || {}; const me = this.props.me || {};
     const role = me.role || 'inputter';
     const g = (k, d) => (docs[k] === undefined || docs[k] === null) ? d : docs[k];
-    const ls = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; } };
     const deptMembers = { ...this.seedDeptMembers(), ...g('wef_deptmembers', {}) };
     const empDir = g('wef_empdir', []);
     return {
       edits: g('wef_edits', {}), members: g('wef_members', null) || this.seedMembers(), photos: g('wef_photos', {}), order: g('wef_order', null),
       deptEdits: g('wef_deptedits', {}), deptMembers, customEvents: g('wef_custom_events', []), eventEdits: g('wef_event_edits', {}), eventDeleted: g('wef_event_deleted', []), eventTeams: g('wef_event_teams', {}),
       empDir: Array.isArray(empDir) ? empDir : [], wfNom: g('wef_wfnom', {}), fbOpen: g('wef_fbopen', {}), feedback: g('wef_feedback', {}), hotelAssign: g('wef_hotel', {}),
-      role, admin: role === 'admin', myStreams: ls('wef_mystream', {}), leadId: 'me',
+      role, admin: role === 'admin', myStreams: (() => { try { return JSON.parse(localStorage.getItem('wef_mystream') || '{}') || {}; } catch (e) { return {}; } })(), leadId: 'me',
       approvals: g('wef_approvals', {}), design: g('wef_design', {}), tasks: g('wef_tasks', {}), teamlog: g('wef_teamlog', {}), taskOv: g('wef_taskov', {}), taskDel: g('wef_taskdel', {}), baseHide: g('wef_basehide', {}), tlEdits: g('wef_tledits', {}),
       users: db.users || [], authed: true
     };
@@ -87,7 +94,9 @@ logic = rep(logic, '  applyHash() {', `  componentDidUpdate(prev) { if (prev.dat
 logic = rep(logic,
   'persist(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {} }',
   `persist(key, val) {
-    try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {}
+    // Display preferences stay on the device; everything else goes to the server only.
+    if (key === 'wef_lang') { try { localStorage.setItem('wef_lang', JSON.stringify(val)); } catch (e) {} return; }
+    if (key === 'wef_mystream') { try { localStorage.setItem('wef_mystream', JSON.stringify(val)); } catch (e) {} return; }
     if (LOCAL_KEYS.has(key) || !this.props.sync) return;
     this.props.sync(key, val).then(() => { if (this.state.syncError) this.setState({ syncError: null }); })
       .catch(err => this.setState({ syncError: (err && err.message) || String(err) }));
@@ -117,6 +126,8 @@ logic = rep(logic, 'blankAdmin: blankEvent && !hasRich && st.admin,', 'blankAdmi
 // 5) roles and streams come from the signed-in account
 logic = rep(logic, "  canEditTeam(teamId) { const r = this.state.role || 'inputter'; if (r === 'admin') return true; if (r === 'inputter') return (this.state.myStreams || {})[this.state.event] === teamId; if (r === 'lead') return this._leadStreams().indexOf(teamId) !== -1; return false; }",
   "  canEditTeam(teamId) { const r = this.state.role || 'inputter'; if (r === 'admin') return true; if (r === 'inputter' || r === 'lead') return this._leadStreams().indexOf(teamId) !== -1; return false; }", 'can-edit-team');
+// the design's own _leadStreams (demo lead picker) would shadow the account-based one above
+logic = rep(logic, "  _leadStreams() { const L = this.STREAM_LEADS.find(x => x.id === (this.state.leadId || 'ali')); return L ? L.streams : []; }\n", '', 'drop-demo-leadstreams');
 logic = rep(logic, '(st.myStreams || {})[st.event]', 'this.myStreamFor(st.event)', 'my-stream', { all: true });
 logic = rep(logic, "      leadOpts: this.STREAM_LEADS.map(l => ({ v: l.id, t: l.n, sel: l.id === (st.leadId || 'ali') })),", '      leadOpts: [],', 'lead-opts');
 logic = rep(logic, '  setRole = (r) => () => {\n    this.persist(\'wef_role\', r);', "  setRole = (r) => () => {\n    if (!(this.props && this.props.demoRoles)) return; // role is fixed by the account in the IT build", 'set-role-guard');
@@ -126,7 +137,7 @@ logic = rep(logic, "  resetData = () => {\n    ['wef_edits', 'wef_photos', 'wef_
   '  resetData = () => { if (this.props.refresh) this.props.refresh(); };', 'reset-data');
 
 // 6) sign-in is handled by Auth.js; the demo overlay never renders
-logic = rep(logic, '      needLogin: !st.authed, doLogin: this.doLogin, doSignOut: this.doSignOut,', '      needLogin: false, doLogin: () => {}, doSignOut: (this.props && this.props.onSignOut) || (() => {}), syncError: st.syncError || null,', 'no-demo-login');
+logic = rep(logic, '      needLogin: !st.authed, doLogin: this.doLogin, doSignOut: this.doSignOut,\n      loginErr: !!st.loginErr,', '      needLogin: false, doLogin: () => {}, doSignOut: (this.props && this.props.onSignOut) || (() => {}), syncError: st.syncError || null,', 'no-demo-login');
 
 // 7) Management Access talks to /api/users (emails + roles + teams, no passwords)
 const mgmtOld = logic.slice(logic.indexOf('  mgmtUpdateUser = (id, patch) =>'), logic.indexOf('  seedDeptMembers = () =>'));
